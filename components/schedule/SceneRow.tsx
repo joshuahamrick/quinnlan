@@ -37,14 +37,14 @@ export default function SceneRow({ row }: SceneRowProps) {
           value={row.timeStart}
           onChange={(v) => updateRow(row.id, { timeStart: v })}
           placeholder="Start"
-          className="text-[11px] font-semibold"
+          className="text-[11px] font-semibold text-center"
         />
         <div className="text-[10px] text-gray-500 text-center">to</div>
         <EditableText
           value={row.timeEnd}
           onChange={(v) => updateRow(row.id, { timeEnd: v })}
           placeholder="End"
-          className="text-[11px] font-semibold"
+          className="text-[11px] font-semibold text-center"
         />
       </div>
 
