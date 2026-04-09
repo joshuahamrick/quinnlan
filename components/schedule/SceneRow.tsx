@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
+import { calculateDuration } from '@/lib/time-utils';
 import type { SceneRow as SceneRowType } from '@/lib/types';
 import EditableText from './EditableText';
 
@@ -35,14 +36,22 @@ export default function SceneRow({ row }: SceneRowProps) {
       <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
         <EditableText
           value={row.timeStart}
-          onChange={(v) => updateRow(row.id, { timeStart: v })}
+          onChange={(v) => {
+            updateRow(row.id, { timeStart: v });
+            const duration = calculateDuration(v, row.timeEnd);
+            if (duration) updateRow(row.id, { allowTime: duration });
+          }}
           placeholder="Start"
           className="text-[11px] font-semibold text-center"
         />
         <div className="text-[10px] text-gray-500 text-center">to</div>
         <EditableText
           value={row.timeEnd}
-          onChange={(v) => updateRow(row.id, { timeEnd: v })}
+          onChange={(v) => {
+            updateRow(row.id, { timeEnd: v });
+            const duration = calculateDuration(row.timeStart, v);
+            if (duration) updateRow(row.id, { allowTime: duration });
+          }}
           placeholder="End"
           className="text-[11px] font-semibold text-center"
         />

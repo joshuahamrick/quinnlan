@@ -1,6 +1,7 @@
 'use client';
 
 import { useScheduleStore } from '@/lib/store';
+import { calculateDuration } from '@/lib/time-utils';
 import type { ActionBarRow } from '@/lib/types';
 import EditableText from './EditableText';
 
@@ -33,14 +34,22 @@ export default function ActionBar({ row }: ActionBarProps) {
         <div className="w-[100px] shrink-0 flex items-center">
           <EditableText
             value={row.timeStart}
-            onChange={(v) => updateRow(row.id, { timeStart: v })}
+            onChange={(v) => {
+              updateRow(row.id, { timeStart: v });
+              const duration = calculateDuration(v, row.timeEnd);
+              if (duration) updateRow(row.id, { allowTime: duration });
+            }}
             placeholder="Start"
             className="text-white text-[11px] [&_span]:text-white/60"
           />
           {(row.timeStart || row.timeEnd) && <span className="mx-0.5">-</span>}
           <EditableText
             value={row.timeEnd}
-            onChange={(v) => updateRow(row.id, { timeEnd: v })}
+            onChange={(v) => {
+              updateRow(row.id, { timeEnd: v });
+              const duration = calculateDuration(row.timeStart, v);
+              if (duration) updateRow(row.id, { allowTime: duration });
+            }}
             placeholder="End"
             className="text-white text-[11px] [&_span]:text-white/60"
           />
