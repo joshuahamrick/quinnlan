@@ -95,6 +95,6 @@ export function calculateDuration(startStr: string, endStr: string): string {
 
   if (hours === 0) return `${mins}mins`;
   if (mins === 0) return hours === 1 ? '1hr' : `${hours}hrs`;
-  const decimal = parseFloat((hours + mins / 60).toFixed(1));
-  return `${decimal}hrs`;
+  const hrLabel = hours === 1 ? 'hr' : 'hrs';
+  return `${hours}${hrLabel} ${mins}mins`;
 }
