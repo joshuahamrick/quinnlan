@@ -13,6 +13,7 @@ interface SceneRowProps {
 export default function SceneRow({ row }: SceneRowProps) {
   const { updateRow, removeRow } = useScheduleStore();
   const fileRef = useRef<HTMLInputElement>(null);
+  const boardIsDragging = useRef(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -70,8 +71,8 @@ export default function SceneRow({ row }: SceneRowProps) {
 
       {/* Boards */}
       <div
-        className="border-r border-gray-300 px-2 py-1 relative group/boards cursor-pointer"
-        onClick={() => fileRef.current?.click()}
+        className="border-r border-gray-300 px-2 py-1 relative group/boards cursor-pointer flex items-center justify-center"
+        onClick={() => { if (!boardIsDragging.current) fileRef.current?.click(); }}
       >
         {row.boardImages.length === 0 ? (
           <span className="text-[11px] text-gray-400 select-none">Click to add boards</span>
@@ -103,7 +104,7 @@ export default function SceneRow({ row }: SceneRowProps) {
           onChange={handleImageUpload}
           onClick={(e) => e.stopPropagation()}
         />
-        <BoardResizeHandle rowId={row.id} />
+        <BoardResizeHandle rowId={row.id} isDraggingRef={boardIsDragging} />
       </div>
 
       {/* Talent */}
@@ -149,7 +150,7 @@ export default function SceneRow({ row }: SceneRowProps) {
   );
 }
 
-function BoardResizeHandle({ rowId }: { rowId: string }) {
+function BoardResizeHandle({ rowId, isDraggingRef }: { rowId: string; isDraggingRef: React.MutableRefObject<boolean> }) {
   const updateRow = useScheduleStore((s) => s.updateRow);
   const dragState = useRef<{ startY: number; startScale: number } | null>(null);
 
@@ -171,6 +172,7 @@ function BoardResizeHandle({ rowId }: { rowId: string }) {
     e.stopPropagation();
     e.preventDefault();
 
+    isDraggingRef.current = true;
     const rows = useScheduleStore.getState().schedule.rows;
     const row = rows.find((r) => r.id === rowId);
     const currentScale = row && row.type === 'scene' ? (row.boardScale ?? 1) : 1;
@@ -188,6 +190,8 @@ function BoardResizeHandle({ rowId }: { rowId: string }) {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
       listenersRef.current = null;
+      // Delay clearing isDragging so the parent onClick (which fires after mouseup) is suppressed
+      setTimeout(() => { isDraggingRef.current = false; }, 0);
     };
 
     if (listenersRef.current) {
@@ -197,7 +201,7 @@ function BoardResizeHandle({ rowId }: { rowId: string }) {
     listenersRef.current = { move: onMouseMove, up: onMouseUp };
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-  }, [rowId]);
+  }, [rowId, isDraggingRef]);
 
   return (
     <div
