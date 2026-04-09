@@ -8,24 +8,33 @@ export default function HeaderBar() {
 
   return (
     <div
-      className="flex items-center justify-between px-4 py-2 text-white"
+      className="grid grid-cols-[auto_1fr_auto] items-center px-4 py-2 text-white"
       style={{ backgroundColor: schedule.themeColor }}
     >
-      <span className="font-bold text-lg tracking-wider">SCHEDULE</span>
-      <span className="text-base font-semibold">
+      {/* Left: SCHEDULE */}
+      <span className="font-extrabold text-lg tracking-[0.15em] uppercase whitespace-nowrap">
+        SCHEDULE
+      </span>
+
+      {/* Center: Project Name with pipe separators */}
+      <div className="flex items-center justify-center gap-3 text-base font-bold">
+        <span className="text-white/50">|</span>
         <EditableText
           value={schedule.projectName}
           onChange={(v) => updateField('projectName', v)}
           placeholder="Project Name"
-          className="text-white [&_span]:text-white/60"
+          className="text-white font-bold [&_span]:text-white/60"
         />
-      </span>
-      <span className="text-sm">
+        <span className="text-white/50">|</span>
+      </div>
+
+      {/* Right: Date */}
+      <span className="text-sm font-bold whitespace-nowrap">
         <EditableText
           value={schedule.date}
           onChange={(v) => updateField('date', v)}
-          placeholder="Date"
-          className="text-white [&_span]:text-white/60"
+          placeholder="Day, Date"
+          className="text-white font-bold [&_span]:text-white/60"
         />
       </span>
     </div>

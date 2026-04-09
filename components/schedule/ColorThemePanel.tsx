@@ -38,7 +38,7 @@ export default function ColorThemePanel() {
           }
         }
       }
-      setExtractedColors(combined.slice(0, 12));
+      setExtractedColors(combined);
     }
 
     extract();
