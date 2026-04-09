@@ -69,6 +69,7 @@ export default function ScheduleEditor() {
     timeEnd: '',
     description: '',
     boardImages: [],
+    boardScale: 1,
     talent: '',
     details: '',
     allowTime: '',

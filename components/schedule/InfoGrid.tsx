@@ -40,7 +40,7 @@ export default function InfoGrid() {
         className="border border-gray-300 text-[10px] leading-tight"
         style={{
           display: 'grid',
-          gridTemplateColumns: '14% 22% 16% 18% 30%',
+          gridTemplateColumns: '15% 25% 18% 16% 26%',
           gridTemplateRows: 'auto auto',
         }}
       >

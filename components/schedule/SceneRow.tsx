@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import type { SceneRow as SceneRowType } from '@/lib/types';
 import EditableText from './EditableText';
@@ -60,14 +60,15 @@ export default function SceneRow({ row }: SceneRowProps) {
       </div>
 
       {/* Boards */}
-      <div className="border-r border-gray-300 px-2 py-1">
+      <div className="border-r border-gray-300 px-2 py-1 relative group/boards">
         <div className="flex flex-wrap gap-1">
           {row.boardImages.map((img, i) => (
             <div key={i} className="relative group/img">
               <img
                 src={img}
                 alt={`Board ${i + 1}`}
-                className="h-16 w-auto object-cover rounded"
+                className="w-auto object-cover rounded"
+                style={{ maxHeight: 80 * (row.boardScale ?? 1) }}
               />
               <button
                 onClick={() => removeImage(i)}
@@ -79,7 +80,8 @@ export default function SceneRow({ row }: SceneRowProps) {
           ))}
           <button
             onClick={() => fileRef.current?.click()}
-            className="h-16 w-16 border border-dashed border-gray-400 rounded flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-400 text-lg"
+            className="w-16 border border-dashed border-gray-400 rounded flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-400 text-lg"
+            style={{ height: 80 * (row.boardScale ?? 1) }}
           >
             +
           </button>
@@ -91,6 +93,7 @@ export default function SceneRow({ row }: SceneRowProps) {
             onChange={handleImageUpload}
           />
         </div>
+        <BoardResizeHandle rowId={row.id} />
       </div>
 
       {/* Talent */}
@@ -132,6 +135,79 @@ export default function SceneRow({ row }: SceneRowProps) {
       >
         x
       </button>
+    </div>
+  );
+}
+
+function BoardResizeHandle({ rowId }: { rowId: string }) {
+  const updateRow = useScheduleStore((s) => s.updateRow);
+  const dragState = useRef<{ startY: number; startScale: number } | null>(null);
+
+  const updateRowRef = useRef(updateRow);
+  updateRowRef.current = updateRow;
+
+  const listenersRef = useRef<{ move: (e: MouseEvent) => void; up: (e: MouseEvent) => void } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (listenersRef.current) {
+        window.removeEventListener('mousemove', listenersRef.current.move);
+        window.removeEventListener('mouseup', listenersRef.current.up);
+      }
+    };
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const rows = useScheduleStore.getState().schedule.rows;
+    const row = rows.find((r) => r.id === rowId);
+    const currentScale = row && row.type === 'scene' ? (row.boardScale ?? 1) : 1;
+    dragState.current = { startY: e.clientY, startScale: currentScale };
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!dragState.current) return;
+      const deltaY = ev.clientY - dragState.current.startY;
+      const newScale = Math.min(3.0, Math.max(0.3, dragState.current.startScale + deltaY * 0.005));
+      updateRowRef.current(rowId, { boardScale: Math.round(newScale * 100) / 100 });
+    };
+
+    const onMouseUp = () => {
+      dragState.current = null;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      listenersRef.current = null;
+    };
+
+    if (listenersRef.current) {
+      window.removeEventListener('mousemove', listenersRef.current.move);
+      window.removeEventListener('mouseup', listenersRef.current.up);
+    }
+    listenersRef.current = { move: onMouseMove, up: onMouseUp };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [rowId]);
+
+  return (
+    <div
+      className="absolute bottom-1 right-1 cursor-nwse-resize opacity-0 group-hover/boards:opacity-60 hover:!opacity-100 transition-opacity"
+      data-export-hide
+      onMouseDown={handleMouseDown}
+    >
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 12 12"
+        className="text-gray-400 select-none"
+      >
+        <path
+          d="M11 1L1 11M11 5L5 11M11 9L9 11"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
     </div>
   );
 }

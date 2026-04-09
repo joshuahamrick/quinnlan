@@ -86,6 +86,7 @@ export interface SceneRow {
   timeEnd: string;
   description: string;
   boardImages: string[];
+  boardScale: number;
   talent: string;
   details: string;
   allowTime: string;

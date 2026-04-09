@@ -76,6 +76,7 @@ function createDefaultSchedule(): Schedule {
         timeEnd: '',
         description: '',
         boardImages: [],
+        boardScale: 1,
         talent: '',
         details: '',
         allowTime: '',
