@@ -164,7 +164,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
           setTimeout(() => hoursRef.current?.focus(), 0);
         }}
       >
-        <span className="text-gray-400 italic">{placeholder || 'Time'}</span>
+        <span className="text-gray-400 italic" data-export-hide>{placeholder || 'Time'}</span>
       </span>
     );
   }

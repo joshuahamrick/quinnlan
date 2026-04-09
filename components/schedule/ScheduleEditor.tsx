@@ -98,7 +98,7 @@ export default function ScheduleEditor() {
   };
 
   return (
-    <div className="max-w-[1100px] mx-auto bg-white shadow-sm" id="schedule-content">
+    <div className="max-w-[1100px] mx-auto bg-white shadow-sm border-b border-gray-300" id="schedule-content">
       <HeaderBar />
       <InfoGrid />
       <VersionBar />

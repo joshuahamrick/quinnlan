@@ -78,6 +78,12 @@ export async function exportToPdf(
 
         const pageDataUrl = canvas.toDataURL('image/png');
         pdf.addImage(pageDataUrl, 'PNG', MARGIN_IN, MARGIN_IN, scaledWidth, destH);
+
+        // Draw a clean bottom border at the content edge of each page
+        const contentBottom = MARGIN_IN + destH;
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5 / DPI);
+        pdf.line(MARGIN_IN, contentBottom, LETTER_WIDTH_IN - MARGIN_IN, contentBottom);
       }
     }
 

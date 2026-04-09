@@ -63,7 +63,7 @@ export default function EditableText({
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block ${multiline ? 'whitespace-pre-wrap' : ''} ${displayAlign} ${className}`}
         onClick={() => setEditing(true)}
       >
-        {value || <span className="text-gray-400 italic">{placeholder}</span>}
+        {value || <span className="text-gray-400 italic" data-export-hide>{placeholder}</span>}
       </span>
     );
   }

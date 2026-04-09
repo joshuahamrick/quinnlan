@@ -202,7 +202,7 @@ export default function HeaderBar() {
             onClick={() => setCalendarOpen(!calendarOpen)}
           >
             {schedule.date || (
-              <span className="text-white/60 italic">Click to set date</span>
+              <span className="text-white/60 italic" data-export-hide>Click to set date</span>
             )}
           </span>
           {calendarOpen && (

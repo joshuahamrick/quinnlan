@@ -95,7 +95,7 @@ export default function SceneRow({ row }: SceneRowProps) {
         onDrop={handleBoardDrop}
       >
         {row.boardImages.length === 0 ? (
-          <span className="text-[11px] text-gray-400 select-none">Click to add boards</span>
+          <span className="text-[11px] text-gray-400 select-none" data-export-hide>Click to add boards</span>
         ) : (
           <div className="flex flex-wrap gap-1">
             {row.boardImages.map((img, i) => (

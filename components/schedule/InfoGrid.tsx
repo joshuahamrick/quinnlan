@@ -77,7 +77,7 @@ export default function InfoGrid() {
               </div>
             ))}
             {schedule.contacts.length === 0 && (
-              <div className="text-gray-400 italic text-[9px]">Click to add contacts</div>
+              <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add contacts</div>
             )}
           </div>
         </div>
@@ -107,7 +107,7 @@ export default function InfoGrid() {
                 />
               ))
           ) : (
-            <div className="text-gray-400 italic text-[9px]">Click to add logos</div>
+            <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add logos</div>
           )}
           {schedule.logos.filter((l) => l.url).length > 0 && (
             <LogoResizeHandle isDraggingRef={logoIsDragging} />
@@ -138,13 +138,13 @@ export default function InfoGrid() {
                     {ct.label}
                   </span>
                 ) : (
-                  <span className="text-gray-300 italic">—</span>
+                  <span className="text-gray-300 italic" data-export-hide>—</span>
                 )}
               </div>
             );
           })}
           {schedule.callTimes.length === 0 && (
-            <div className="text-gray-400 italic text-[9px]">Click to add call times</div>
+            <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add call times</div>
           )}
         </div>
 
@@ -174,7 +174,7 @@ export default function InfoGrid() {
             </>
           )}
           {schedule.talentCalls.length === 0 && schedule.bgCalls.length === 0 && (
-            <div className="text-gray-400 italic text-[9px]">Click to add</div>
+            <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add</div>
           )}
         </div>
 
@@ -187,7 +187,7 @@ export default function InfoGrid() {
           {schedule.director ? (
             <div className="font-semibold">{schedule.director}</div>
           ) : (
-            <div className="text-gray-400 italic text-[9px]">Click to set</div>
+            <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
           )}
           <div className="mt-1.5 space-y-0.5">
             {schedule.date && (
@@ -203,7 +203,7 @@ export default function InfoGrid() {
               <div className="font-semibold">Day {schedule.dayNumber} of {schedule.totalDays}</div>
             )}
             {!schedule.date && !schedule.sunrise && !schedule.weather && (
-              <div className="text-gray-400 italic text-[9px]">Click to set date/weather</div>
+              <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set date/weather</div>
             )}
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function InfoGrid() {
               ) : (
                 <div>
                   <div className="font-extrabold text-[10px] uppercase mb-0.5">Hospital:</div>
-                  <div className="text-gray-400 italic text-[9px]">Click to add hospital</div>
+                  <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add hospital</div>
                 </div>
               )}
             </div>
