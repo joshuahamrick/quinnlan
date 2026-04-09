@@ -32,14 +32,14 @@ export default function SceneRow({ row }: SceneRowProps) {
   return (
     <div className="grid grid-cols-[10%_25%_20%_12%_25%_8%] border border-gray-300 border-t-0 text-xs group relative hover:bg-blue-50/30 transition-colors">
       {/* Time */}
-      <div className="border-r border-gray-300 px-2 py-1">
+      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
         <EditableText
           value={row.timeStart}
           onChange={(v) => updateRow(row.id, { timeStart: v })}
           placeholder="Start"
           className="text-[11px] font-semibold"
         />
-        <div className="text-[10px] text-gray-500">to</div>
+        <div className="text-[10px] text-gray-500 text-center">to</div>
         <EditableText
           value={row.timeEnd}
           onChange={(v) => updateRow(row.id, { timeEnd: v })}
@@ -49,7 +49,7 @@ export default function SceneRow({ row }: SceneRowProps) {
       </div>
 
       {/* Description */}
-      <div className="border-r border-gray-300 px-2 py-1">
+      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
         <EditableText
           value={row.description}
           onChange={(v) => updateRow(row.id, { description: v })}
@@ -60,44 +60,45 @@ export default function SceneRow({ row }: SceneRowProps) {
       </div>
 
       {/* Boards */}
-      <div className="border-r border-gray-300 px-2 py-1 relative group/boards">
-        <div className="flex flex-wrap gap-1">
-          {row.boardImages.map((img, i) => (
-            <div key={i} className="relative group/img">
-              <img
-                src={img}
-                alt={`Board ${i + 1}`}
-                className="w-auto object-cover rounded"
-                style={{ maxHeight: 80 * (row.boardScale ?? 1) }}
-              />
-              <button
-                onClick={() => removeImage(i)}
-                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-3.5 h-3.5 text-[8px] flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
-              >
-                x
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="w-16 border border-dashed border-gray-400 rounded flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-400 text-lg"
-            style={{ height: 80 * (row.boardScale ?? 1) }}
-          >
-            +
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageUpload}
-          />
-        </div>
+      <div
+        className="border-r border-gray-300 px-2 py-1 relative group/boards cursor-pointer"
+        onClick={() => fileRef.current?.click()}
+      >
+        {row.boardImages.length === 0 ? (
+          <span className="text-[11px] text-gray-400 select-none">Click to add boards</span>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {row.boardImages.map((img, i) => (
+              <div key={i} className="relative group/img">
+                <img
+                  src={img}
+                  alt={`Board ${i + 1}`}
+                  className="w-auto object-cover rounded"
+                  style={{ maxHeight: 80 * (row.boardScale ?? 1) }}
+                />
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeImage(i); }}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-3.5 h-3.5 text-[8px] flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
+                >
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+          onClick={(e) => e.stopPropagation()}
+        />
         <BoardResizeHandle rowId={row.id} />
       </div>
 
       {/* Talent */}
-      <div className="border-r border-gray-300 px-2 py-1">
+      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
         <EditableText
           value={row.talent}
           onChange={(v) => updateRow(row.id, { talent: v })}
@@ -108,7 +109,7 @@ export default function SceneRow({ row }: SceneRowProps) {
       </div>
 
       {/* Details / Notes */}
-      <div className="border-r border-gray-300 px-2 py-1">
+      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
         <EditableText
           value={row.details}
           onChange={(v) => updateRow(row.id, { details: v })}
@@ -119,7 +120,7 @@ export default function SceneRow({ row }: SceneRowProps) {
       </div>
 
       {/* Allow */}
-      <div className="px-2 py-1">
+      <div className="px-2 py-1 flex flex-col justify-center">
         <EditableText
           value={row.allowTime}
           onChange={(v) => updateRow(row.id, { allowTime: v })}
