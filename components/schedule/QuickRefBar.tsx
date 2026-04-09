@@ -8,6 +8,7 @@ export default function QuickRefBar() {
 
   return (
     <div
+      data-schedule-row
       className="flex items-center justify-center px-4 py-1.5 text-white text-xs font-bold tracking-wide"
       style={{ backgroundColor: schedule.themeColor }}
     >

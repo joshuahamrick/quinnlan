@@ -172,6 +172,7 @@ export default function HeaderBar() {
 
   return (
     <div
+      data-schedule-row
       className="relative px-4 py-2 text-white"
       style={{ backgroundColor: schedule.themeColor }}
     >

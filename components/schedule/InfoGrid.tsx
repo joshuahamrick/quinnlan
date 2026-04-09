@@ -54,6 +54,7 @@ export default function InfoGrid() {
     <>
       {/* Info Grid — 5-column CSS grid matching Canva reference layout */}
       <div
+        data-schedule-row
         className="border border-gray-300 text-[10px] leading-tight"
         style={{
           display: 'grid',

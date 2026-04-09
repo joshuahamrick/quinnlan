@@ -7,7 +7,7 @@ export default function DayTitleRow() {
   const { schedule, updateField } = useScheduleStore();
 
   return (
-    <div className="border border-gray-300 border-t-0 px-4 py-2 text-center font-bold text-lg">
+    <div data-schedule-row className="border border-gray-300 border-t-0 px-4 py-2 text-center font-bold text-lg">
       <span>{schedule.projectName || 'Project Name'}</span>
       <span className="mx-3">|</span>
       <span>Day </span>

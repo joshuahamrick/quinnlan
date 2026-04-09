@@ -7,7 +7,7 @@ export default function VersionBar() {
   const { schedule, updateField } = useScheduleStore();
 
   return (
-    <div className="border border-gray-300 border-t-0 px-4 py-1 text-center text-xs font-bold uppercase tracking-wide bg-gray-50">
+    <div data-schedule-row className="border border-gray-300 border-t-0 px-4 py-1 text-center text-xs font-bold uppercase tracking-wide bg-gray-50">
       <span>Schedule Version </span>
       <EditableText
         value={String(schedule.version)}

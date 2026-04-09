@@ -7,7 +7,7 @@ export default function CrewCallRow() {
   const { schedule, updateField } = useScheduleStore();
 
   return (
-    <div className="grid grid-cols-[10%_90%] border border-gray-300 border-t-0 text-xs">
+    <div data-schedule-row className="grid grid-cols-[10%_90%] border border-gray-300 border-t-0 text-xs">
       <div className="border-r border-gray-300 px-2 py-1 font-semibold">
         <TimeInput
           value={schedule.crewCallTime}

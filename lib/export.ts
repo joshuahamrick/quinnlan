@@ -6,15 +6,20 @@ const LETTER_HEIGHT_IN = 11;
 const DPI = 96;
 const MARGIN_IN = 0.25;
 
-/** Collect the bottom-edge Y positions of every direct child of the schedule container, in image pixels. */
+/** Collect the bottom-edge Y positions of every visual row in the schedule, in image pixels. */
 function getRowBoundaries(element: HTMLElement, pixelRatio: number): number[] {
-  const children = element.children;
+  const rows = element.querySelectorAll('[data-schedule-row]');
   const boundaries: number[] = [];
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i] as HTMLElement;
-    boundaries.push((child.offsetTop + child.offsetHeight) * pixelRatio);
+  const elementRect = element.getBoundingClientRect();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] as HTMLElement;
+    const rowRect = row.getBoundingClientRect();
+    const bottomY = (rowRect.bottom - elementRect.top) * pixelRatio;
+    boundaries.push(bottomY);
   }
-  return boundaries;
+
+  return [...new Set(boundaries)].sort((a, b) => a - b);
 }
 
 export async function exportToPng(

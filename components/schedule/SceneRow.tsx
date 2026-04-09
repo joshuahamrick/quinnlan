@@ -50,7 +50,7 @@ export default function SceneRow({ row }: SceneRowProps) {
   };
 
   return (
-    <div className="grid grid-cols-[10%_25%_20%_12%_25%_8%] border border-gray-300 border-t-0 text-xs group relative hover:bg-blue-50/30 transition-colors">
+    <div data-schedule-row className="grid grid-cols-[10%_25%_20%_12%_25%_8%] border border-gray-300 border-t-0 text-xs group relative hover:bg-blue-50/30 transition-colors">
       {/* Time */}
       <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
         <TimeInput

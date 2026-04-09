@@ -27,6 +27,7 @@ export default function ActionBar({ row }: ActionBarProps) {
 
   return (
     <div
+      data-schedule-row
       className="border border-gray-300 border-t-0 text-xs text-white font-bold group relative"
       style={{ backgroundColor: getBackgroundColor() }}
     >
