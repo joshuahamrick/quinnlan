@@ -44,7 +44,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   }, [value]);
 
   const emit = useCallback((h: string, m: string, p: string) => {
-    if (!h && !m && !p) {
+    if (!h) {
       if (value) onChange('');
       return;
     }
@@ -62,6 +62,13 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     const related = e.relatedTarget as Node | null;
     if (containerRef.current && related && containerRef.current.contains(related)) return;
     setFocused(false);
+    // If no hours entered, reset all fields
+    if (!hours) {
+      setMinutes('');
+      setPeriod('');
+      emit(hours, '', '');
+      return;
+    }
     // Pad minutes on blur
     const paddedMin = minutes ? minutes.padStart(2, '0') : minutes;
     if (paddedMin !== minutes) setMinutes(paddedMin);
@@ -133,10 +140,10 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     emit(hours, minutes, next);
   };
 
-  const isEmpty = !hours && !minutes && !period;
+  const hasValue = !!value;
 
   // When not focused and empty, show placeholder
-  if (!focused && isEmpty) {
+  if (!focused && !hasValue) {
     return (
       <span
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
@@ -151,7 +158,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   }
 
   // When not focused and has value, show as plain text
-  if (!focused && !isEmpty) {
+  if (!focused && hasValue) {
     return (
       <span
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
@@ -180,7 +187,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onFocus={handleFocus}
         onKeyDown={handleHoursKeyDown}
         placeholder="H"
-        className="w-[1.6em] text-center border border-blue-400 rounded-l px-0 py-0.5 outline-none bg-white text-inherit"
+        className="w-[1.6em] text-center border border-transparent focus:border-blue-400 rounded-l px-0 py-0.5 outline-none bg-white text-inherit"
         style={{ fontSize: 'inherit' }}
       />
       <span className="text-inherit select-none" style={{ fontSize: 'inherit' }}>:</span>
@@ -193,7 +200,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onFocus={handleFocus}
         onKeyDown={handleMinutesKeyDown}
         placeholder="MM"
-        className="w-[2em] text-center border border-blue-400 px-0 py-0.5 outline-none bg-white text-inherit"
+        className="w-[2em] text-center border border-transparent focus:border-blue-400 px-0 py-0.5 outline-none bg-white text-inherit"
         style={{ fontSize: 'inherit' }}
       />
       <button
@@ -202,7 +209,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onClick={togglePeriod}
         onFocus={handleFocus}
         onKeyDown={handlePeriodKeyDown}
-        className="w-[1.4em] text-center border border-blue-400 rounded-r px-0 py-0.5 outline-none bg-white text-inherit cursor-pointer hover:bg-blue-50"
+        className="w-[1.4em] text-center border border-transparent focus:border-blue-400 rounded-r px-0 py-0.5 outline-none bg-white text-inherit cursor-pointer hover:bg-blue-50"
         style={{ fontSize: 'inherit' }}
       >
         {period || 'A'}
