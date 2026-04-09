@@ -494,19 +494,16 @@ export default function InfoGrid() {
 /** Large, prominent red medical cross icon matching Canva examples */
 function HospitalIcon() {
   return (
-    <div
-      className="shrink-0 flex items-center justify-center"
-      style={{ width: 48, height: 48 }}
-    >
+    <div className="shrink-0 flex items-center justify-center" style={{ width: 40, height: 40 }}>
       <svg
-        width="44"
-        height="44"
-        viewBox="0 0 44 44"
+        width="38"
+        height="38"
+        viewBox="0 0 38 38"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect x="15" y="2" width="14" height="40" rx="2" fill="#dc2626" />
-        <rect x="2" y="15" width="40" height="14" rx="2" fill="#dc2626" />
+        <rect x="13" y="2" width="12" height="34" rx="1.5" fill="#dc2626" />
+        <rect x="2" y="13" width="34" height="12" rx="1.5" fill="#dc2626" />
       </svg>
     </div>
   );

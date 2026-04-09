@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import type { SceneRow as SceneRowType, ActionBarRow, ActionBarType } from '@/lib/types';
 import HeaderBar from './HeaderBar';
@@ -14,8 +14,53 @@ import SceneRow from './SceneRow';
 import ActionBar from './ActionBar';
 
 export default function ScheduleEditor() {
-  const { schedule, insertRowAfter, addRow } = useScheduleStore();
+  const { schedule, insertRowAfter, addRow, reorderRows } = useScheduleStore();
   const [insertMenuId, setInsertMenuId] = useState<string | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
+  const handleDragStart = useCallback((e: React.DragEvent, rowId: string) => {
+    setDraggedId(rowId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', rowId);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropTargetIndex(index);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, regularRows: { id: string }[]) => {
+    e.preventDefault();
+    if (draggedId == null || dropTargetIndex == null) return;
+
+    const fromRow = schedule.rows.findIndex((r) => r.id === draggedId);
+    // dropTargetIndex is the visual position in regularRows where we want to insert.
+    // Map it back to the schedule.rows index.
+    let toRow: number;
+    if (dropTargetIndex >= regularRows.length) {
+      // Dropping after the last regular row — find the index of the last regular row + 1
+      const lastRegular = regularRows[regularRows.length - 1];
+      toRow = schedule.rows.findIndex((r) => r.id === lastRegular.id) + 1;
+    } else {
+      toRow = schedule.rows.findIndex((r) => r.id === regularRows[dropTargetIndex].id);
+    }
+
+    if (fromRow !== -1 && toRow !== -1 && fromRow !== toRow) {
+      // If moving down, adjust for the removal shifting indices
+      const adjustedTo = fromRow < toRow ? toRow - 1 : toRow;
+      reorderRows(fromRow, adjustedTo);
+    }
+
+    setDraggedId(null);
+    setDropTargetIndex(null);
+  }, [draggedId, dropTargetIndex, schedule.rows, reorderRows]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedId(null);
+    setDropTargetIndex(null);
+  }, []);
 
   const createSceneRow = (): SceneRowType => ({
     id: crypto.randomUUID(),
@@ -77,12 +122,45 @@ export default function ScheduleEditor() {
 
         return (
           <>
-            {regularRows.map((row) => (
+            {regularRows.map((row, index) => (
               <div key={row.id}>
-                {row.type === 'scene' ? (
-                  <SceneRow row={row as SceneRowType} />
-                ) : (
-                  <ActionBar row={row as ActionBarRow} />
+                {/* Drop indicator above this row */}
+                {draggedId != null && dropTargetIndex === index && draggedId !== row.id && (
+                  <div className="h-0.5 bg-blue-500 mx-1" />
+                )}
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, row.id)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onDrop={(e) => handleDrop(e, regularRows)}
+                  className={`relative group/row ${draggedId === row.id ? 'opacity-40' : ''}`}
+                >
+                  {/* Drag handle */}
+                  <div
+                    data-export-hide
+                    className="absolute left-0 top-0 bottom-0 w-6 z-10 flex items-center justify-center cursor-grab opacity-0 group-hover/row:opacity-100 transition-opacity"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
+                      <circle cx="5" cy="3" r="1.5" fill="currentColor" />
+                      <circle cx="11" cy="3" r="1.5" fill="currentColor" />
+                      <circle cx="5" cy="8" r="1.5" fill="currentColor" />
+                      <circle cx="11" cy="8" r="1.5" fill="currentColor" />
+                      <circle cx="5" cy="13" r="1.5" fill="currentColor" />
+                      <circle cx="11" cy="13" r="1.5" fill="currentColor" />
+                    </svg>
+                  </div>
+                  {row.type === 'scene' ? (
+                    <SceneRow row={row as SceneRowType} />
+                  ) : (
+                    <ActionBar row={row as ActionBarRow} />
+                  )}
+                </div>
+
+                {/* Drop indicator after last row */}
+                {draggedId != null && index === regularRows.length - 1 && dropTargetIndex === regularRows.length && (
+                  <div className="h-0.5 bg-blue-500 mx-1" />
                 )}
 
                 {/* Insert button between rows */}
@@ -118,7 +196,12 @@ export default function ScheduleEditor() {
             ))}
 
             {/* Add row button - inserts before terminal rows */}
-            <div className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative" data-export-hide>
+            <div
+              className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative"
+              data-export-hide
+              onDragOver={(e) => handleDragOver(e, regularRows.length)}
+              onDrop={(e) => handleDrop(e, regularRows)}
+            >
               <button
                 onClick={() =>
                   setInsertMenuId(insertMenuId === '__end' ? null : '__end')
