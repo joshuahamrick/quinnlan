@@ -116,6 +116,7 @@ interface ScheduleStore {
   // Logos
   addLogo: () => void;
   removeLogo: (id: string) => void;
+  reorderLogos: (fromIndex: number, toIndex: number) => void;
 
   // Call times
   addCallTime: () => void;
@@ -204,6 +205,13 @@ export const useScheduleStore = create<ScheduleStore>()(
             logos: state.schedule.logos.filter((l) => l.id !== id),
           },
         })),
+      reorderLogos: (fromIndex, toIndex) =>
+        set((state) => {
+          const logos = [...state.schedule.logos];
+          const [moved] = logos.splice(fromIndex, 1);
+          logos.splice(toIndex, 0, moved);
+          return { schedule: { ...state.schedule, logos } };
+        }),
 
       // Call times
       addCallTime: () =>

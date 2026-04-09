@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import { compressImage } from '@/lib/images';
 import SectionModal from './SectionModal';
@@ -16,6 +16,7 @@ export default function InfoGrid() {
     updateContact,
     addLogo,
     removeLogo,
+    reorderLogos,
     addCallTime,
     removeCallTime,
     updateCallTime,
@@ -29,6 +30,8 @@ export default function InfoGrid() {
 
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const logoIsDragging = useRef(false);
+  const [logoDragIndex, setLogoDragIndex] = useState<number | null>(null);
+  const [logoDropTarget, setLogoDropTarget] = useState<number | null>(null);
 
   return (
     <>
@@ -37,7 +40,7 @@ export default function InfoGrid() {
         className="border border-gray-300 text-[10px] leading-tight"
         style={{
           display: 'grid',
-          gridTemplateColumns: '12% 18% 16% 20% 34%',
+          gridTemplateColumns: '14% 22% 16% 18% 30%',
           gridTemplateRows: 'auto auto',
         }}
       >
@@ -51,7 +54,7 @@ export default function InfoGrid() {
           <div className="text-left">
             {schedule.contacts.map((c) => (
               <div key={c.id} className="mb-1">
-                {c.title && <div className="font-semibold italic text-[9px]">{c.title}</div>}
+                {c.title && <div className="font-semibold text-[9px]">{c.title}</div>}
                 {c.name && <div className="text-[9px]">{c.name}</div>}
                 {c.phone && <div className="text-[9px]">{c.phone}</div>}
               </div>
@@ -64,7 +67,7 @@ export default function InfoGrid() {
 
         {/* LOGOS — full height, centered, with resize */}
         <div
-          className="group/logos border-r border-gray-300 p-2 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors relative"
+          className="group/logos border-r border-gray-300 p-2 flex flex-row flex-wrap items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors relative"
           style={{ gridRow: '1 / 3' }}
           onClick={() => { if (!logoIsDragging.current) setActiveModal('logos'); }}
         >
@@ -96,8 +99,7 @@ export default function InfoGrid() {
           style={{ gridRow: '1 / 3' }}
           onClick={() => setActiveModal('callTimes')}
         >
-          {schedule.callTimes.map((ct, i) => {
-            const placeholderTimes = ['7:30A', '8:00A', '8:30A', '10:00A', '12:30P', '6:00P'];
+          {schedule.callTimes.map((ct) => {
             const hasTime = ct.time.trim() !== '';
             const hasLabel = ct.label.trim() !== '';
             return (
@@ -112,7 +114,7 @@ export default function InfoGrid() {
                   </span>
                 ) : hasLabel ? (
                   <span className="text-gray-300 italic">
-                    <span className="font-semibold">{placeholderTimes[i] ?? '0:00A'}:</span> {ct.label}
+                    {ct.label}
                   </span>
                 ) : (
                   <span className="text-gray-300 italic">—</span>
@@ -275,9 +277,55 @@ export default function InfoGrid() {
         onClose={() => setActiveModal(null)}
         title="Logos"
       >
-        <div className="space-y-4">
-          {schedule.logos.map((logo) => (
-            <LogoModalSlot key={logo.id} logo={logo} onRemove={() => removeLogo(logo.id)} />
+        <div className="space-y-1">
+          {schedule.logos.map((logo, index) => (
+            <div key={logo.id}>
+              {logoDropTarget === index && logoDragIndex !== index && logoDragIndex !== index - 1 && (
+                <div className="h-0.5 bg-blue-500 rounded-full mx-3 my-1" />
+              )}
+              <div
+                draggable
+                onDragStart={(e) => {
+                  setLogoDragIndex(index);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setLogoDropTarget(index);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (logoDragIndex !== null && logoDragIndex !== index) {
+                    reorderLogos(logoDragIndex, index);
+                  }
+                  setLogoDragIndex(null);
+                  setLogoDropTarget(null);
+                }}
+                onDragEnd={() => {
+                  setLogoDragIndex(null);
+                  setLogoDropTarget(null);
+                }}
+                className={`flex items-center gap-2 ${logoDragIndex === index ? 'opacity-40' : ''}`}
+              >
+                <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 shrink-0 px-1">
+                  <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
+                    <circle cx="2" cy="2" r="1.5" />
+                    <circle cx="6" cy="2" r="1.5" />
+                    <circle cx="2" cy="7" r="1.5" />
+                    <circle cx="6" cy="7" r="1.5" />
+                    <circle cx="2" cy="12" r="1.5" />
+                    <circle cx="6" cy="12" r="1.5" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <LogoModalSlot logo={logo} onRemove={() => removeLogo(logo.id)} />
+                </div>
+              </div>
+              {logoDropTarget === schedule.logos.length - 1 && index === schedule.logos.length - 1 && logoDragIndex !== index && (
+                <div className="h-0.5 bg-blue-500 rounded-full mx-3 my-1" />
+              )}
+            </div>
           ))}
           <button
             onClick={addLogo}
@@ -525,40 +573,64 @@ function HospitalIcon() {
   );
 }
 
-/** Logo resize drag handle — appears at bottom-right on hover of the logo area */
-function LogoResizeHandle({ isDraggingRef }: { isDraggingRef: React.RefObject<boolean> }) {
-  const { schedule, updateField } = useScheduleStore();
-  const startY = useRef(0);
-  const startScale = useRef(1);
+/** Logo resize drag handle — visible at bottom-right of the logo area */
+function LogoResizeHandle({ isDraggingRef }: { isDraggingRef: React.MutableRefObject<boolean> }) {
+  const updateField = useScheduleStore((s) => s.updateField);
+  const dragState = useRef<{ startY: number; startScale: number } | null>(null);
+
+  // Store updateField in a ref so the window listeners always use the latest
+  const updateFieldRef = useRef(updateField);
+  updateFieldRef.current = updateField;
+
+  // Clean up window listeners on unmount
+  const listenersRef = useRef<{ move: (e: MouseEvent) => void; up: (e: MouseEvent) => void } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (listenersRef.current) {
+        window.removeEventListener('mousemove', listenersRef.current.move);
+        window.removeEventListener('mouseup', listenersRef.current.up);
+      }
+    };
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+
+    const currentScale = useScheduleStore.getState().schedule.logoScale;
     isDraggingRef.current = true;
-    startY.current = e.clientY;
-    startScale.current = schedule.logoScale;
+    dragState.current = { startY: e.clientY, startScale: currentScale };
 
-    const handleMouseMove = (ev: MouseEvent) => {
-      if (!isDraggingRef.current) return;
-      const delta = (ev.clientY - startY.current) / 100;
-      const newScale = Math.min(3.0, Math.max(0.3, startScale.current + delta));
-      updateField('logoScale', Math.round(newScale * 100) / 100);
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!dragState.current) return;
+      const deltaY = ev.clientY - dragState.current.startY;
+      const newScale = Math.min(3.0, Math.max(0.3, dragState.current.startScale + deltaY * 0.005));
+      updateFieldRef.current('logoScale', Math.round(newScale * 100) / 100);
     };
 
-    const handleMouseUp = () => {
-      // Delay clearing isDragging so the parent onClick (which fires after mouseup) is still suppressed
+    const onMouseUp = () => {
+      dragState.current = null;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      listenersRef.current = null;
+      // Delay clearing isDragging so the parent onClick (which fires after mouseup) is suppressed
       setTimeout(() => { isDraggingRef.current = false; }, 0);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  }, [schedule.logoScale, updateField, isDraggingRef]);
+    // Remove any stale listeners before adding new ones
+    if (listenersRef.current) {
+      window.removeEventListener('mousemove', listenersRef.current.move);
+      window.removeEventListener('mouseup', listenersRef.current.up);
+    }
+    listenersRef.current = { move: onMouseMove, up: onMouseUp };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [isDraggingRef]);
 
   return (
     <div
-      className="absolute bottom-1 right-1 cursor-nwse-resize opacity-0 group-hover/logos:opacity-100 transition-opacity"
+      className="absolute bottom-1 right-1 cursor-nwse-resize opacity-60 hover:opacity-100 transition-opacity"
       data-export-hide
       onMouseDown={handleMouseDown}
     >
