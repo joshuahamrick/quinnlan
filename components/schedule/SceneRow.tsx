@@ -37,9 +37,8 @@ export default function SceneRow({ row }: SceneRowProps) {
         <EditableText
           value={row.timeStart}
           onChange={(v) => {
-            updateRow(row.id, { timeStart: v });
             const duration = calculateDuration(v, row.timeEnd);
-            if (duration) updateRow(row.id, { allowTime: duration });
+            updateRow(row.id, { timeStart: v, ...(duration ? { allowTime: duration } : {}) });
           }}
           placeholder="Start"
           className="text-[11px] font-semibold text-center"
@@ -48,9 +47,8 @@ export default function SceneRow({ row }: SceneRowProps) {
         <EditableText
           value={row.timeEnd}
           onChange={(v) => {
-            updateRow(row.id, { timeEnd: v });
             const duration = calculateDuration(row.timeStart, v);
-            if (duration) updateRow(row.id, { allowTime: duration });
+            updateRow(row.id, { timeEnd: v, ...(duration ? { allowTime: duration } : {}) });
           }}
           placeholder="End"
           className="text-[11px] font-semibold text-center"
@@ -107,34 +105,34 @@ export default function SceneRow({ row }: SceneRowProps) {
       </div>
 
       {/* Talent */}
-      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
+      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
         <EditableText
           value={row.talent}
           onChange={(v) => updateRow(row.id, { talent: v })}
           placeholder="Talent"
-          className="text-[11px]"
+          className="text-[11px] [&_input]:text-center"
           multiline
         />
       </div>
 
       {/* Details / Notes */}
-      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
+      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
         <EditableText
           value={row.details}
           onChange={(v) => updateRow(row.id, { details: v })}
           placeholder="Camera, Art, Props..."
-          className="text-[11px]"
+          className="text-[11px] [&_input]:text-center"
           multiline
         />
       </div>
 
       {/* Allow */}
-      <div className="px-2 py-1 flex flex-col justify-center">
+      <div className="px-2 py-1 flex flex-col justify-center items-center text-center">
         <EditableText
           value={row.allowTime}
           onChange={(v) => updateRow(row.id, { allowTime: v })}
           placeholder="Time"
-          className="text-[11px]"
+          className="text-[11px] [&_input]:text-center"
         />
       </div>
 

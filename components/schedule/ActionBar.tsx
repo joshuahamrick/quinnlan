@@ -35,9 +35,8 @@ export default function ActionBar({ row }: ActionBarProps) {
           <EditableText
             value={row.timeStart}
             onChange={(v) => {
-              updateRow(row.id, { timeStart: v });
               const duration = calculateDuration(v, row.timeEnd);
-              if (duration) updateRow(row.id, { allowTime: duration });
+              updateRow(row.id, { timeStart: v, ...(duration ? { allowTime: duration } : {}) });
             }}
             placeholder="Start"
             className="text-white text-[11px] [&_span]:text-white/60"
@@ -46,9 +45,8 @@ export default function ActionBar({ row }: ActionBarProps) {
           <EditableText
             value={row.timeEnd}
             onChange={(v) => {
-              updateRow(row.id, { timeEnd: v });
               const duration = calculateDuration(row.timeStart, v);
-              if (duration) updateRow(row.id, { allowTime: duration });
+              updateRow(row.id, { timeEnd: v, ...(duration ? { allowTime: duration } : {}) });
             }}
             placeholder="End"
             className="text-white text-[11px] [&_span]:text-white/60"
