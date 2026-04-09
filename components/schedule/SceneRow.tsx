@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
+import { compressImage } from '@/lib/images';
 import { calculateDuration, formatTimeInput } from '@/lib/time-utils';
 import type { SceneRow as SceneRowType } from '@/lib/types';
 import EditableText from './EditableText';
@@ -14,6 +15,22 @@ export default function SceneRow({ row }: SceneRowProps) {
   const { updateRow, removeRow } = useScheduleStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const boardIsDragging = useRef(false);
+  const [boardDropActive, setBoardDropActive] = useState(false);
+
+  const handleBoardDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setBoardDropActive(false);
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const raw = reader.result as string;
+      const url = await compressImage(raw);
+      updateRow(row.id, { boardImages: [...row.boardImages, url] });
+    };
+    reader.readAsDataURL(file);
+  }, [row.id, row.boardImages, updateRow]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -71,8 +88,12 @@ export default function SceneRow({ row }: SceneRowProps) {
 
       {/* Boards */}
       <div
-        className="border-r border-gray-300 px-2 py-1 relative group/boards cursor-pointer flex items-center justify-center"
+        className={`border-r border-gray-300 px-2 py-1 relative group/boards cursor-pointer flex items-center justify-center ${boardDropActive ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''}`}
         onClick={() => { if (!boardIsDragging.current) fileRef.current?.click(); }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setBoardDropActive(true); }}
+        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setBoardDropActive(false); }}
+        onDrop={handleBoardDrop}
       >
         {row.boardImages.length === 0 ? (
           <span className="text-[11px] text-gray-400 select-none">Click to add boards</span>

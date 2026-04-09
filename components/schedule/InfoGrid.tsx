@@ -32,6 +32,23 @@ export default function InfoGrid() {
   const logoIsDragging = useRef(false);
   const [logoDragIndex, setLogoDragIndex] = useState<number | null>(null);
   const [logoDropTarget, setLogoDropTarget] = useState<number | null>(null);
+  const [logoDropZoneActive, setLogoDropZoneActive] = useState(false);
+
+  const handleLogoDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setLogoDropZoneActive(false);
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const raw = reader.result as string;
+      const url = await compressImage(raw);
+      const newId = crypto.randomUUID();
+      updateField('logos', [...schedule.logos, { id: newId, url, name: file.name }]);
+    };
+    reader.readAsDataURL(file);
+  }, [schedule.logos, updateField]);
 
   return (
     <>
@@ -67,9 +84,13 @@ export default function InfoGrid() {
 
         {/* LOGOS — full height, centered, with resize */}
         <div
-          className="group/logos border-r border-gray-300 p-2 flex flex-row flex-wrap items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors relative"
+          className={`group/logos border-r border-gray-300 p-2 flex flex-row flex-wrap items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors relative ${logoDropZoneActive ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''}`}
           style={{ gridRow: '1 / 3' }}
           onClick={() => { if (!logoIsDragging.current) setActiveModal('logos'); }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setLogoDropZoneActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setLogoDropZoneActive(false); }}
+          onDrop={handleLogoDrop}
         >
           {schedule.logos.filter((l) => l.url).length > 0 ? (
             schedule.logos
