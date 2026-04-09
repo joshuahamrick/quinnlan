@@ -55,8 +55,11 @@ function createDefaultSchedule(): Schedule {
     weather: '',
 
     hospitalName: '',
+    hospitalDepartment: '',
     hospitalAddress: '',
     hospitalPhone: '',
+
+    logoScale: 1.0,
 
     productionTime: '',
     generalTime: '',

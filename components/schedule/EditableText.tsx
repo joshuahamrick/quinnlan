@@ -52,6 +52,10 @@ export default function EditableText({
     }
   };
 
+  // Extract alignment from [&_input]:text-* patterns and pass them to the input directly
+  const alignMatch = className.match(/\[&_input\]:text-(center|right|left)/);
+  const inputAlign = alignMatch ? `text-${alignMatch[1]}` : '';
+
   if (!editing) {
     return (
       <span
@@ -71,7 +75,7 @@ export default function EditableText({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={save}
         onKeyDown={handleKeyDown}
-        className={`w-full border border-blue-400 rounded px-1 py-0.5 text-sm outline-none resize-y min-h-[3em] ${className}`}
+        className={`w-full border border-blue-400 rounded px-1 py-0.5 text-sm outline-none resize-y min-h-[3em] ${className} ${inputAlign}`}
         placeholder={placeholder}
       />
     );
@@ -85,7 +89,7 @@ export default function EditableText({
       onChange={(e) => setDraft(e.target.value)}
       onBlur={save}
       onKeyDown={handleKeyDown}
-      className={`border border-blue-400 rounded px-1 py-0.5 text-sm outline-none w-full ${className}`}
+      className={`border border-blue-400 rounded px-1 py-0.5 text-sm outline-none w-full ${className} ${inputAlign}`}
       placeholder={placeholder}
     />
   );

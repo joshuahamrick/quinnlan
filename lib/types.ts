@@ -27,8 +27,12 @@ export interface Schedule {
 
   // Hospital
   hospitalName: string;
+  hospitalDepartment: string;
   hospitalAddress: string;
   hospitalPhone: string;
+
+  // Logo display
+  logoScale: number;
 
   // Quick reference times
   productionTime: string;

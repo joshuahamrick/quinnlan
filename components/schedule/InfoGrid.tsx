@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import SectionModal from './SectionModal';
 
@@ -30,11 +30,19 @@ export default function InfoGrid() {
 
   return (
     <>
-      {/* Info Grid — matches Canva reference layout */}
-      <div className="grid grid-cols-[14%_18%_16%_20%_32%] border border-gray-300 text-[10px] leading-tight">
-        {/* CONTACTS */}
+      {/* Info Grid — 5-column CSS grid matching Canva reference layout */}
+      <div
+        className="border border-gray-300 text-[10px] leading-tight"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '12% 18% 16% 20% 34%',
+          gridTemplateRows: 'auto auto',
+        }}
+      >
+        {/* CONTACTS — full height, centered */}
         <div
-          className="border-r border-gray-300 p-2 flex flex-col justify-center cursor-pointer hover:bg-blue-50/40 transition-colors"
+          className="border-r border-gray-300 p-2 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50/40 transition-colors"
+          style={{ gridRow: '1 / 3' }}
           onClick={() => setActiveModal('contacts')}
         >
           <div className="font-extrabold text-[10px] uppercase mb-1.5">Contacts:</div>
@@ -50,9 +58,10 @@ export default function InfoGrid() {
           )}
         </div>
 
-        {/* LOGOS */}
+        {/* LOGOS — full height, centered, with resize */}
         <div
-          className="border-r border-gray-300 p-2 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors"
+          className="border-r border-gray-300 p-2 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors relative"
+          style={{ gridRow: '1 / 3' }}
           onClick={() => setActiveModal('logos')}
         >
           {schedule.logos.filter((l) => l.url).length > 0 ? (
@@ -63,17 +72,26 @@ export default function InfoGrid() {
                   key={logo.id}
                   src={logo.url}
                   alt={logo.name}
-                  className="max-h-24 max-w-full object-contain"
+                  className="max-w-full object-contain"
+                  style={{
+                    maxHeight: `${96 * schedule.logoScale}px`,
+                    transform: `scale(${schedule.logoScale})`,
+                    transformOrigin: 'center center',
+                  }}
                 />
               ))
           ) : (
             <div className="text-gray-400 italic text-[9px]">Click to add logos</div>
           )}
+          {schedule.logos.filter((l) => l.url).length > 0 && (
+            <LogoResizeHandle />
+          )}
         </div>
 
-        {/* CALL TIMES */}
+        {/* CALL TIMES — full height */}
         <div
           className="border-r border-gray-300 p-2 cursor-pointer hover:bg-blue-50/40 transition-colors"
+          style={{ gridRow: '1 / 3' }}
           onClick={() => setActiveModal('callTimes')}
         >
           {schedule.callTimes.map((ct) => (
@@ -92,83 +110,90 @@ export default function InfoGrid() {
           )}
         </div>
 
-        {/* RIGHT SECTION: Talent Calls + BG Calls / Director+Date / Hospital */}
-        <div className="border-r border-gray-300 flex flex-col">
-          {/* TALENT CALLS + BG CALLS */}
-          <div
-            className="p-2 flex-1 border-b border-gray-300 cursor-pointer hover:bg-blue-50/40 transition-colors"
-            onClick={() => setActiveModal('talentCalls')}
-          >
-            <div className="font-extrabold text-[10px] uppercase mb-1">Talent Calls:</div>
-            {schedule.talentCalls.map((tc) => (
-              <div key={tc.id} className="mb-0.5">
-                {tc.label && tc.time ? (
-                  <span>{tc.label}: {tc.time}</span>
-                ) : null}
-              </div>
-            ))}
-            {schedule.bgCalls.length > 0 && (
-              <>
-                <div className="font-extrabold text-[10px] uppercase mt-1.5 mb-0.5">BG Calls:</div>
-                {schedule.bgCalls.map((bc) => (
-                  <div key={bc.id} className="mb-0.5">
-                    {bc.label && bc.time ? (
-                      <span>{bc.label}: {bc.time}</span>
-                    ) : null}
-                  </div>
-                ))}
-              </>
-            )}
-            {schedule.talentCalls.length === 0 && schedule.bgCalls.length === 0 && (
-              <div className="text-gray-400 italic text-[9px]">Click to add</div>
-            )}
-          </div>
-
-          {/* HOSPITAL */}
-          <div
-            className="p-2 cursor-pointer hover:bg-blue-50/40 transition-colors"
-            onClick={() => setActiveModal('hospital')}
-          >
-            <div className="flex items-center gap-1.5 mb-1">
-              <HospitalIcon />
-              <span className="font-extrabold text-[10px] uppercase">Hospital:</span>
+        {/* TALENT CALLS + BG CALLS — top portion of col 4 */}
+        <div
+          className="border-r border-gray-300 border-b border-gray-300 p-2 cursor-pointer hover:bg-blue-50/40 transition-colors"
+          onClick={() => setActiveModal('talentCalls')}
+        >
+          <div className="font-extrabold text-[10px] uppercase mb-1">Talent Calls:</div>
+          {schedule.talentCalls.map((tc) => (
+            <div key={tc.id} className="mb-0.5">
+              {tc.label && tc.time ? (
+                <span>{tc.label}: {tc.time}</span>
+              ) : null}
             </div>
-            {schedule.hospitalName ? (
-              <div>
-                <div className="font-semibold">{schedule.hospitalName}</div>
-                {schedule.hospitalAddress && <div>{schedule.hospitalAddress}</div>}
-                {schedule.hospitalPhone && <div>{schedule.hospitalPhone}</div>}
-              </div>
-            ) : (
-              <div className="text-gray-400 italic text-[9px]">Click to add hospital</div>
+          ))}
+          {schedule.bgCalls.length > 0 && (
+            <>
+              <div className="font-extrabold text-[10px] uppercase mt-1.5 mb-0.5">BG Calls:</div>
+              {schedule.bgCalls.map((bc) => (
+                <div key={bc.id} className="mb-0.5">
+                  {bc.label && bc.time ? (
+                    <span>{bc.label}: {bc.time}</span>
+                  ) : null}
+                </div>
+              ))}
+            </>
+          )}
+          {schedule.talentCalls.length === 0 && schedule.bgCalls.length === 0 && (
+            <div className="text-gray-400 italic text-[9px]">Click to add</div>
+          )}
+        </div>
+
+        {/* DIRECTOR + DATE + WEATHER — top portion of col 5 */}
+        <div
+          className="p-2 border-b border-gray-300 cursor-pointer hover:bg-blue-50/40 transition-colors"
+          onClick={() => setActiveModal('director')}
+        >
+          <div className="font-extrabold text-[10px] uppercase mb-0.5">Director</div>
+          {schedule.director ? (
+            <div className="font-semibold">{schedule.director}</div>
+          ) : (
+            <div className="text-gray-400 italic text-[9px]">Click to set</div>
+          )}
+          <div className="mt-1.5 space-y-0.5">
+            {schedule.date && (
+              <div className="font-extrabold uppercase text-[9px]">{schedule.date}</div>
+            )}
+            {schedule.sunrise && (
+              <div><span className="font-semibold">Sunrise:</span> {schedule.sunrise}{schedule.sunset ? ` | Sunset: ${schedule.sunset}` : ''}</div>
+            )}
+            {schedule.weather && (
+              <div><span className="font-semibold">Weather:</span> {schedule.weather}</div>
+            )}
+            {(schedule.dayNumber || schedule.totalDays) && (
+              <div className="font-semibold">Day {schedule.dayNumber} of {schedule.totalDays}</div>
+            )}
+            {!schedule.date && !schedule.sunrise && !schedule.weather && (
+              <div className="text-gray-400 italic text-[9px]">Click to set date/weather</div>
             )}
           </div>
         </div>
 
-        {/* DIRECTOR + DATE + WEATHER */}
-        <div className="flex flex-col">
-          <div
-            className="p-2 flex-1 cursor-pointer hover:bg-blue-50/40 transition-colors"
-            onClick={() => setActiveModal('director')}
-          >
-            <div className="font-extrabold text-[10px] uppercase mb-1">Director</div>
-            {schedule.director ? (
-              <div className="font-semibold">{schedule.director}</div>
-            ) : (
-              <div className="text-gray-400 italic text-[9px]">Click to set</div>
-            )}
-            <div className="mt-2 space-y-0.5">
-              {schedule.date && (
-                <div className="font-extrabold uppercase text-[9px]">{schedule.date}</div>
-              )}
-              {schedule.sunrise && (
-                <div><span className="font-semibold">Sunrise:</span> {schedule.sunrise}{schedule.sunset ? ` | Sunset: ${schedule.sunset}` : ''}</div>
-              )}
-              {schedule.weather && (
-                <div><span className="font-semibold">Weather:</span> {schedule.weather}</div>
-              )}
-              {!schedule.date && !schedule.sunrise && !schedule.weather && (
-                <div className="text-gray-400 italic text-[9px]">Click to set date/weather</div>
+        {/* HOSPITAL — spans bottom of columns 4 and 5 */}
+        <div
+          className="p-2 cursor-pointer hover:bg-blue-50/40 transition-colors"
+          style={{ gridColumn: '4 / 6' }}
+          onClick={() => setActiveModal('hospital')}
+        >
+          <div className="flex items-start gap-2.5">
+            <HospitalIcon />
+            <div className="flex-1 min-w-0">
+              {schedule.hospitalName ? (
+                <div>
+                  <div className="font-extrabold text-[10px] uppercase mb-0.5">Hospital:</div>
+                  <div className="font-semibold text-[9px]">{schedule.hospitalName}</div>
+                  {schedule.hospitalDepartment && (
+                    <div className="text-[9px]">{schedule.hospitalDepartment}</div>
+                  )}
+                  {schedule.hospitalAddress && <div className="text-[9px]">{schedule.hospitalAddress}</div>}
+                  {schedule.hospitalPhone && <div className="text-[9px]">{schedule.hospitalPhone}</div>}
+                </div>
+              ) : (
+                <div>
+                  <div className="font-extrabold text-[10px] uppercase mb-0.5">Hospital:</div>
+                  <div className="text-gray-400 italic text-[9px]">Click to add hospital</div>
+                </div>
               )}
             </div>
           </div>
@@ -435,9 +460,10 @@ export default function InfoGrid() {
             <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Department</label>
             <input
               type="text"
-              value="Emergency Room"
-              readOnly
-              className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm bg-gray-50 text-gray-500"
+              value={schedule.hospitalDepartment}
+              onChange={(e) => updateField('hospitalDepartment', e.target.value)}
+              placeholder="e.g. Midtown - Emergency"
+              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
             />
           </div>
           <div>
@@ -446,7 +472,7 @@ export default function InfoGrid() {
               type="text"
               value={schedule.hospitalAddress}
               onChange={(e) => updateField('hospitalAddress', e.target.value)}
-              placeholder="Full address"
+              placeholder="Full address with city/state/zip"
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
             />
           </div>
@@ -466,23 +492,75 @@ export default function InfoGrid() {
   );
 }
 
-/** Red medical cross icon matching Canva examples */
+/** Large, prominent red medical cross icon matching Canva examples */
 function HospitalIcon() {
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="shrink-0"
+    <div
+      className="shrink-0 flex items-center justify-center rounded-md"
+      style={{
+        width: 38,
+        height: 38,
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      }}
     >
-      <rect width="18" height="18" rx="2" fill="white" stroke="#dc2626" strokeWidth="1" />
-      <path
-        d="M7 3h4v4h4v4h-4v4H7v-4H3V7h4V3z"
-        fill="#dc2626"
-      />
-    </svg>
+      <svg
+        width="28"
+        height="28"
+        viewBox="0 0 28 28"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect x="10" y="2" width="8" height="24" rx="1.5" fill="#dc2626" />
+        <rect x="2" y="10" width="24" height="8" rx="1.5" fill="#dc2626" />
+      </svg>
+    </div>
+  );
+}
+
+/** Logo resize drag handle */
+function LogoResizeHandle() {
+  const { schedule, updateField } = useScheduleStore();
+  const dragging = useRef(false);
+  const startY = useRef(0);
+  const startScale = useRef(1);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    dragging.current = true;
+    startY.current = e.clientY;
+    startScale.current = schedule.logoScale;
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      if (!dragging.current) return;
+      const delta = (startY.current - ev.clientY) / 100;
+      const newScale = Math.min(2.0, Math.max(0.5, startScale.current + delta));
+      updateField('logoScale', Math.round(newScale * 100) / 100);
+    };
+
+    const handleMouseUp = () => {
+      dragging.current = false;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [schedule.logoScale, updateField]);
+
+  return (
+    <div
+      className="absolute bottom-1 left-1/2 -translate-x-1/2 cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity"
+      data-export-hide
+      onMouseDown={handleMouseDown}
+    >
+      <div className="flex flex-col items-center gap-0.5 px-2 py-0.5 bg-gray-200/80 rounded text-[8px] text-gray-500 select-none">
+        <div className="w-4 h-0.5 bg-gray-400 rounded" />
+        <div className="w-4 h-0.5 bg-gray-400 rounded" />
+      </div>
+    </div>
   );
 }
 

@@ -8,35 +8,40 @@ export default function HeaderBar() {
 
   return (
     <div
-      className="grid grid-cols-[auto_1fr_auto] items-center px-4 py-2 text-white"
+      className="relative px-4 py-2 text-white"
       style={{ backgroundColor: schedule.themeColor }}
     >
-      {/* Left: SCHEDULE */}
-      <span className="font-extrabold text-lg tracking-[0.15em] uppercase whitespace-nowrap">
-        SCHEDULE
-      </span>
+      {/* Use a table-like layout for true centering */}
+      <div className="flex items-center">
+        {/* Left: SCHEDULE - fixed width */}
+        <div className="w-[120px] shrink-0">
+          <span className="font-extrabold text-base tracking-[0.15em] uppercase">
+            SCHEDULE
+          </span>
+        </div>
 
-      {/* Center: Project Name with pipe separators */}
-      <div className="flex items-center justify-center gap-3 text-base font-bold">
-        <span className="text-white/50">|</span>
-        <EditableText
-          value={schedule.projectName}
-          onChange={(v) => updateField('projectName', v)}
-          placeholder="Project Name"
-          className="text-white font-bold [&_span]:text-white/60"
-        />
-        <span className="text-white/50">|</span>
+        {/* Center: Project Name - takes remaining space, text-center */}
+        <div className="flex-1 text-center">
+          <span className="text-white/50 mr-2">|</span>
+          <EditableText
+            value={schedule.projectName}
+            onChange={(v) => updateField('projectName', v)}
+            placeholder="Project Name"
+            className="text-white font-bold text-base [&_span]:text-white/60 [&_input]:text-center"
+          />
+          <span className="text-white/50 ml-2">|</span>
+        </div>
+
+        {/* Right: Date - fixed width */}
+        <div className="w-[220px] shrink-0 text-right">
+          <EditableText
+            value={schedule.date}
+            onChange={(v) => updateField('date', v)}
+            placeholder="Day, Date"
+            className="text-white font-bold text-sm [&_span]:text-white/60 [&_input]:text-right"
+          />
+        </div>
       </div>
-
-      {/* Right: Date */}
-      <span className="text-sm font-bold whitespace-nowrap">
-        <EditableText
-          value={schedule.date}
-          onChange={(v) => updateField('date', v)}
-          placeholder="Day, Date"
-          className="text-white font-bold [&_span]:text-white/60"
-        />
-      </span>
     </div>
   );
 }
