@@ -34,24 +34,33 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   const minutesRef = useRef<HTMLInputElement>(null);
   const periodRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastEmittedRef = useRef(value);
 
-  // Sync from prop
+  // Sync from prop — only when value changes from outside (not from our own emit)
   useEffect(() => {
+    if (value === lastEmittedRef.current) return;
     const p = parseTimeValue(value);
     setHours(p.hours);
     setMinutes(p.minutes);
     setPeriod(p.period);
+    lastEmittedRef.current = value;
   }, [value]);
 
   const emit = useCallback((h: string, m: string, p: string) => {
     if (!h) {
-      if (value) onChange('');
+      if (value) {
+        lastEmittedRef.current = '';
+        onChange('');
+      }
       return;
     }
     if (h && p) {
       const mm = m ? m.padStart(2, '0') : '00';
       const formatted = `${h}:${mm}${p}`;
-      if (formatted !== value) onChange(formatted);
+      if (formatted !== value) {
+        lastEmittedRef.current = formatted;
+        onChange(formatted);
+      }
     }
   }, [value, onChange]);
 
@@ -72,7 +81,10 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     // Pad minutes on blur
     const paddedMin = minutes ? minutes.padStart(2, '0') : minutes;
     if (paddedMin !== minutes) setMinutes(paddedMin);
-    emit(hours, paddedMin || minutes, period);
+    // Default period to 'A' if user never explicitly set it
+    const effectivePeriod = period || 'A';
+    if (!period) setPeriod('A');
+    emit(hours, paddedMin || minutes, effectivePeriod);
   }, [hours, minutes, period, emit]);
 
   const handleHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
