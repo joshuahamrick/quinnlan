@@ -29,8 +29,8 @@ export default function ActionBar({ row }: ActionBarProps) {
       style={{ backgroundColor: getBackgroundColor() }}
     >
       <div className="flex items-center px-2 py-1">
-        {/* Time range - left */}
-        <div className="w-[10%] shrink-0 flex items-center">
+        {/* Time range - left, fixed width */}
+        <div className="w-[100px] shrink-0 flex items-center">
           <EditableText
             value={row.timeStart}
             onChange={(v) => updateRow(row.id, { timeStart: v })}
@@ -46,7 +46,7 @@ export default function ActionBar({ row }: ActionBarProps) {
           />
         </div>
 
-        {/* Label - center, use text-align center */}
+        {/* Label - center, truly centered between equal-width columns */}
         <div className="flex-1 text-center uppercase tracking-wider">
           <EditableText
             value={row.label}
@@ -56,8 +56,8 @@ export default function ActionBar({ row }: ActionBarProps) {
           />
         </div>
 
-        {/* Allow - right */}
-        <div className="w-[8%] shrink-0 text-right">
+        {/* Allow - right, fixed width matching left */}
+        <div className="w-[100px] shrink-0 text-right">
           <EditableText
             value={row.allowTime}
             onChange={(v) => updateRow(row.id, { allowTime: v })}

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
+import { compressImage } from '@/lib/images';
 import SectionModal from './SectionModal';
 
 type ModalType = 'contacts' | 'logos' | 'callTimes' | 'talentCalls' | 'director' | 'hospital' | null;
@@ -60,7 +61,7 @@ export default function InfoGrid() {
 
         {/* LOGOS — full height, centered, with resize */}
         <div
-          className="border-r border-gray-300 p-2 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors relative"
+          className="group/logos border-r border-gray-300 p-2 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors relative"
           style={{ gridRow: '1 / 3' }}
           onClick={() => setActiveModal('logos')}
         >
@@ -75,8 +76,6 @@ export default function InfoGrid() {
                   className="max-w-full object-contain"
                   style={{
                     maxHeight: `${96 * schedule.logoScale}px`,
-                    transform: `scale(${schedule.logoScale})`,
-                    transformOrigin: 'center center',
                   }}
                 />
               ))
@@ -172,17 +171,17 @@ export default function InfoGrid() {
 
         {/* HOSPITAL — spans bottom of columns 4 and 5 */}
         <div
-          className="p-2 cursor-pointer hover:bg-blue-50/40 transition-colors"
+          className="p-2 border-t border-gray-300 cursor-pointer hover:bg-blue-50/40 transition-colors"
           style={{ gridColumn: '4 / 6' }}
           onClick={() => setActiveModal('hospital')}
         >
-          <div className="flex items-start gap-2.5">
+          <div className="flex items-start gap-3">
             <HospitalIcon />
             <div className="flex-1 min-w-0">
               {schedule.hospitalName ? (
                 <div>
                   <div className="font-extrabold text-[10px] uppercase mb-0.5">Hospital:</div>
-                  <div className="font-semibold text-[9px]">{schedule.hospitalName}</div>
+                  <div className="font-bold text-[10px]">{schedule.hospitalName}</div>
                   {schedule.hospitalDepartment && (
                     <div className="text-[9px]">{schedule.hospitalDepartment}</div>
                   )}
@@ -496,30 +495,24 @@ export default function InfoGrid() {
 function HospitalIcon() {
   return (
     <div
-      className="shrink-0 flex items-center justify-center rounded-md"
-      style={{
-        width: 38,
-        height: 38,
-        backgroundColor: '#ffffff',
-        border: '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      }}
+      className="shrink-0 flex items-center justify-center"
+      style={{ width: 48, height: 48 }}
     >
       <svg
-        width="28"
-        height="28"
-        viewBox="0 0 28 28"
+        width="44"
+        height="44"
+        viewBox="0 0 44 44"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect x="10" y="2" width="8" height="24" rx="1.5" fill="#dc2626" />
-        <rect x="2" y="10" width="24" height="8" rx="1.5" fill="#dc2626" />
+        <rect x="15" y="2" width="14" height="40" rx="2" fill="#dc2626" />
+        <rect x="2" y="15" width="40" height="14" rx="2" fill="#dc2626" />
       </svg>
     </div>
   );
 }
 
-/** Logo resize drag handle */
+/** Logo resize drag handle — appears at bottom-right on hover of the logo area */
 function LogoResizeHandle() {
   const { schedule, updateField } = useScheduleStore();
   const dragging = useRef(false);
@@ -535,31 +528,40 @@ function LogoResizeHandle() {
 
     const handleMouseMove = (ev: MouseEvent) => {
       if (!dragging.current) return;
-      const delta = (startY.current - ev.clientY) / 100;
-      const newScale = Math.min(2.0, Math.max(0.5, startScale.current + delta));
+      const delta = (ev.clientY - startY.current) / 100;
+      const newScale = Math.min(3.0, Math.max(0.3, startScale.current + delta));
       updateField('logoScale', Math.round(newScale * 100) / 100);
     };
 
     const handleMouseUp = () => {
       dragging.current = false;
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
   }, [schedule.logoScale, updateField]);
 
   return (
     <div
-      className="absolute bottom-1 left-1/2 -translate-x-1/2 cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity"
+      className="absolute bottom-1 right-1 cursor-nwse-resize opacity-0 group-hover/logos:opacity-100 transition-opacity"
       data-export-hide
       onMouseDown={handleMouseDown}
     >
-      <div className="flex flex-col items-center gap-0.5 px-2 py-0.5 bg-gray-200/80 rounded text-[8px] text-gray-500 select-none">
-        <div className="w-4 h-0.5 bg-gray-400 rounded" />
-        <div className="w-4 h-0.5 bg-gray-400 rounded" />
-      </div>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 12 12"
+        className="text-gray-400 select-none"
+      >
+        <path
+          d="M11 1L1 11M11 5L5 11M11 9L9 11"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
     </div>
   );
 }
@@ -575,12 +577,13 @@ function LogoModalSlot({
   const fileRef = useRef<HTMLInputElement>(null);
   const { updateField, schedule } = useScheduleStore();
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      const url = reader.result as string;
+    reader.onload = async () => {
+      const raw = reader.result as string;
+      const url = await compressImage(raw);
       const updated = schedule.logos.map((l) =>
         l.id === logo.id ? { ...l, url, name: file.name } : l
       );

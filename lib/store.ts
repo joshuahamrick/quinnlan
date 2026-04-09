@@ -291,12 +291,21 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       // Rows
       addRow: (row) =>
-        set((state) => ({
-          schedule: {
-            ...state.schedule,
-            rows: [...state.schedule.rows, row],
-          },
-        })),
+        set((state) => {
+          const rows = [...state.schedule.rows];
+          const firstTerminal = rows.findIndex(
+            (r) =>
+              r.type === 'action' &&
+              ((r as ActionBarRow).actionType === 'wrap' ||
+                (r as ActionBarRow).actionType === 'taillights')
+          );
+          if (firstTerminal !== -1) {
+            rows.splice(firstTerminal, 0, row);
+          } else {
+            rows.push(row);
+          }
+          return { schedule: { ...state.schedule, rows } };
+        }),
       removeRow: (id) =>
         set((state) => ({
           schedule: {

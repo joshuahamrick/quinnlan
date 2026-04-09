@@ -55,11 +55,12 @@ export default function EditableText({
   // Extract alignment from [&_input]:text-* patterns and pass them to the input directly
   const alignMatch = className.match(/\[&_input\]:text-(center|right|left)/);
   const inputAlign = alignMatch ? `text-${alignMatch[1]}` : '';
+  const displayAlign = inputAlign;
 
   if (!editing) {
     return (
       <span
-        className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors ${className}`}
+        className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block ${displayAlign} ${className}`}
         onClick={() => setEditing(true)}
       >
         {value || <span className="text-gray-400 italic">{placeholder}</span>}
