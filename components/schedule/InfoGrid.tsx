@@ -28,6 +28,7 @@ export default function InfoGrid() {
   } = useScheduleStore();
 
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const logoIsDragging = useRef(false);
 
   return (
     <>
@@ -47,23 +48,25 @@ export default function InfoGrid() {
           onClick={() => setActiveModal('contacts')}
         >
           <div className="font-extrabold text-[10px] uppercase mb-1.5">Contacts:</div>
-          {schedule.contacts.map((c) => (
-            <div key={c.id} className="mb-1">
-              {c.title && <div className="font-semibold italic text-[9px]">{c.title}</div>}
-              {c.name && <div className="text-[9px]">{c.name}</div>}
-              {c.phone && <div className="text-[9px]">{c.phone}</div>}
-            </div>
-          ))}
-          {schedule.contacts.length === 0 && (
-            <div className="text-gray-400 italic text-[9px]">Click to add contacts</div>
-          )}
+          <div className="text-left">
+            {schedule.contacts.map((c) => (
+              <div key={c.id} className="mb-1">
+                {c.title && <div className="font-semibold italic text-[9px]">{c.title}</div>}
+                {c.name && <div className="text-[9px]">{c.name}</div>}
+                {c.phone && <div className="text-[9px]">{c.phone}</div>}
+              </div>
+            ))}
+            {schedule.contacts.length === 0 && (
+              <div className="text-gray-400 italic text-[9px]">Click to add contacts</div>
+            )}
+          </div>
         </div>
 
         {/* LOGOS — full height, centered, with resize */}
         <div
           className="group/logos border-r border-gray-300 p-2 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-blue-50/40 transition-colors relative"
           style={{ gridRow: '1 / 3' }}
-          onClick={() => setActiveModal('logos')}
+          onClick={() => { if (!logoIsDragging.current) setActiveModal('logos'); }}
         >
           {schedule.logos.filter((l) => l.url).length > 0 ? (
             schedule.logos
@@ -83,7 +86,7 @@ export default function InfoGrid() {
             <div className="text-gray-400 italic text-[9px]">Click to add logos</div>
           )}
           {schedule.logos.filter((l) => l.url).length > 0 && (
-            <LogoResizeHandle />
+            <LogoResizeHandle isDraggingRef={logoIsDragging} />
           )}
         </div>
 
@@ -93,17 +96,30 @@ export default function InfoGrid() {
           style={{ gridRow: '1 / 3' }}
           onClick={() => setActiveModal('callTimes')}
         >
-          {schedule.callTimes.map((ct) => (
-            <div key={ct.id} className="mb-0.5">
-              {ct.time && ct.label ? (
-                <span>
-                  <span className="font-semibold">{ct.time}:</span> {ct.label}
-                </span>
-              ) : (
-                <span className="text-gray-400 italic">—</span>
-              )}
-            </div>
-          ))}
+          {schedule.callTimes.map((ct, i) => {
+            const placeholderTimes = ['7:30A', '8:00A', '8:30A', '10:00A', '12:30P', '6:00P'];
+            const hasTime = ct.time.trim() !== '';
+            const hasLabel = ct.label.trim() !== '';
+            return (
+              <div key={ct.id} className="mb-0.5">
+                {hasTime && hasLabel ? (
+                  <span>
+                    <span className="font-semibold">{ct.time}:</span> {ct.label}
+                  </span>
+                ) : hasTime ? (
+                  <span>
+                    <span className="font-semibold">{ct.time}:</span>
+                  </span>
+                ) : hasLabel ? (
+                  <span className="text-gray-300 italic">
+                    <span className="font-semibold">{placeholderTimes[i] ?? '0:00A'}:</span> {ct.label}
+                  </span>
+                ) : (
+                  <span className="text-gray-300 italic">—</span>
+                )}
+              </div>
+            );
+          })}
           {schedule.callTimes.length === 0 && (
             <div className="text-gray-400 italic text-[9px]">Click to add call times</div>
           )}
@@ -510,35 +526,35 @@ function HospitalIcon() {
 }
 
 /** Logo resize drag handle — appears at bottom-right on hover of the logo area */
-function LogoResizeHandle() {
+function LogoResizeHandle({ isDraggingRef }: { isDraggingRef: React.RefObject<boolean> }) {
   const { schedule, updateField } = useScheduleStore();
-  const dragging = useRef(false);
   const startY = useRef(0);
   const startScale = useRef(1);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    dragging.current = true;
+    isDraggingRef.current = true;
     startY.current = e.clientY;
     startScale.current = schedule.logoScale;
 
     const handleMouseMove = (ev: MouseEvent) => {
-      if (!dragging.current) return;
+      if (!isDraggingRef.current) return;
       const delta = (ev.clientY - startY.current) / 100;
       const newScale = Math.min(3.0, Math.max(0.3, startScale.current + delta));
       updateField('logoScale', Math.round(newScale * 100) / 100);
     };
 
     const handleMouseUp = () => {
-      dragging.current = false;
+      // Delay clearing isDragging so the parent onClick (which fires after mouseup) is still suppressed
+      setTimeout(() => { isDraggingRef.current = false; }, 0);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-  }, [schedule.logoScale, updateField]);
+  }, [schedule.logoScale, updateField, isDraggingRef]);
 
   return (
     <div

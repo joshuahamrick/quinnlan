@@ -24,10 +24,8 @@ export async function compressImage(dataUrl: string, maxSize: number = 400): Pro
       }
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Use JPEG for smaller file size on photos
-      const jpeg = canvas.toDataURL('image/jpeg', 0.7);
-      const png = canvas.toDataURL('image/png');
-      resolve(jpeg.length < png.length ? jpeg : png);
+      // Always use PNG to preserve transparency for logos
+      resolve(canvas.toDataURL('image/png'));
     };
     img.onerror = () => reject(new Error('Failed to load image'));
     img.src = dataUrl;
