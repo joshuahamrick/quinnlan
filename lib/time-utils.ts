@@ -28,6 +28,55 @@ export function parseTime(timeStr: string): number | null {
 }
 
 /**
+ * Auto-format a time input string for display consistency.
+ * - Strips trailing M from AM/PM → just A or P
+ * - Capitalizes a/p
+ * - Inserts colon if missing between hours and minutes
+ * - Returns original string if it can't be parsed
+ *
+ * Examples: "840am" → "8:40A", "1030p" → "10:30P", "9:00a" → "9:00A", "100P" → "1:00P"
+ */
+export function formatTimeInput(raw: string): string {
+  const s = raw.trim();
+  if (!s) return s;
+
+  // Match digits (1-4) then optional colon then optional digits then A/AM/P/PM (case-insensitive)
+  const match = s.match(/^(\d{1,4})(?::(\d{2}))?\s*(a|am|p|pm|A|AM|P|PM)$/);
+  if (!match) return raw;
+
+  const digits = match[1];
+  let explicitMinutes = match[2]; // from "H:MM" format
+  const periodRaw = match[3];
+
+  let hours: number;
+  let minutes: number;
+
+  if (explicitMinutes != null) {
+    // Already had a colon, e.g. "9:00a"
+    hours = parseInt(digits, 10);
+    minutes = parseInt(explicitMinutes, 10);
+  } else if (digits.length <= 2) {
+    // Just an hour, e.g. "9a" or "12p"
+    hours = parseInt(digits, 10);
+    minutes = 0;
+  } else if (digits.length === 3) {
+    // e.g. "840" → 8:40, "100" → 1:00
+    hours = parseInt(digits[0], 10);
+    minutes = parseInt(digits.slice(1), 10);
+  } else {
+    // e.g. "1030" → 10:30
+    hours = parseInt(digits.slice(0, 2), 10);
+    minutes = parseInt(digits.slice(2), 10);
+  }
+
+  if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) return raw;
+
+  const period = periodRaw[0].toUpperCase(); // "A" or "P"
+  const mm = minutes.toString().padStart(2, '0');
+  return `${hours}:${mm}${period}`;
+}
+
+/**
  * Calculate the duration between two production-schedule time strings.
  * Returns a formatted string like "30mins", "1hr", "1hr 30mins", "2hrs".
  * Returns empty string if either time is unparseable or end <= start.

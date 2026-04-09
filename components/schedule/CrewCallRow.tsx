@@ -1,6 +1,7 @@
 'use client';
 
 import { useScheduleStore } from '@/lib/store';
+import { formatTimeInput } from '@/lib/time-utils';
 import EditableText from './EditableText';
 
 export default function CrewCallRow() {
@@ -11,7 +12,7 @@ export default function CrewCallRow() {
       <div className="border-r border-gray-300 px-2 py-1 font-semibold">
         <EditableText
           value={schedule.crewCallTime}
-          onChange={(v) => updateField('crewCallTime', v)}
+          onChange={(v) => updateField('crewCallTime', formatTimeInput(v))}
           placeholder="Time"
           className="text-[11px] font-semibold"
         />
