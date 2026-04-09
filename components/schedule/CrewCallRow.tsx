@@ -1,8 +1,7 @@
 'use client';
 
 import { useScheduleStore } from '@/lib/store';
-import { formatTimeInput } from '@/lib/time-utils';
-import EditableText from './EditableText';
+import TimeInput from './TimeInput';
 
 export default function CrewCallRow() {
   const { schedule, updateField } = useScheduleStore();
@@ -10,9 +9,9 @@ export default function CrewCallRow() {
   return (
     <div className="grid grid-cols-[10%_90%] border border-gray-300 border-t-0 text-xs">
       <div className="border-r border-gray-300 px-2 py-1 font-semibold">
-        <EditableText
+        <TimeInput
           value={schedule.crewCallTime}
-          onChange={(v) => updateField('crewCallTime', formatTimeInput(v))}
+          onChange={(v) => updateField('crewCallTime', v)}
           placeholder="Time"
           className="text-[11px] font-semibold"
         />

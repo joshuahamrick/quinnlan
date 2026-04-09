@@ -3,9 +3,10 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import { compressImage } from '@/lib/images';
-import { calculateDuration, formatTimeInput } from '@/lib/time-utils';
+import { calculateDuration } from '@/lib/time-utils';
 import type { SceneRow as SceneRowType } from '@/lib/types';
 import EditableText from './EditableText';
+import TimeInput from './TimeInput';
 
 interface SceneRowProps {
   row: SceneRowType;
@@ -52,23 +53,21 @@ export default function SceneRow({ row }: SceneRowProps) {
     <div className="grid grid-cols-[10%_25%_20%_12%_25%_8%] border border-gray-300 border-t-0 text-xs group relative hover:bg-blue-50/30 transition-colors">
       {/* Time */}
       <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
-        <EditableText
+        <TimeInput
           value={row.timeStart}
           onChange={(v) => {
-            const formatted = formatTimeInput(v);
-            const duration = calculateDuration(formatted, row.timeEnd);
-            updateRow(row.id, { timeStart: formatted, ...(duration ? { allowTime: duration } : {}) });
+            const duration = calculateDuration(v, row.timeEnd);
+            updateRow(row.id, { timeStart: v, ...(duration ? { allowTime: duration } : {}) });
           }}
           placeholder="Start"
           className="text-[11px] font-semibold text-center"
         />
         <div className="text-[10px] text-gray-500 text-center">to</div>
-        <EditableText
+        <TimeInput
           value={row.timeEnd}
           onChange={(v) => {
-            const formatted = formatTimeInput(v);
-            const duration = calculateDuration(row.timeStart, formatted);
-            updateRow(row.id, { timeEnd: formatted, ...(duration ? { allowTime: duration } : {}) });
+            const duration = calculateDuration(row.timeStart, v);
+            updateRow(row.id, { timeEnd: v, ...(duration ? { allowTime: duration } : {}) });
           }}
           placeholder="End"
           className="text-[11px] font-semibold text-center"

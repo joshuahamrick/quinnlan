@@ -1,9 +1,10 @@
 'use client';
 
 import { useScheduleStore } from '@/lib/store';
-import { calculateDuration, formatTimeInput } from '@/lib/time-utils';
+import { calculateDuration } from '@/lib/time-utils';
 import type { ActionBarRow } from '@/lib/types';
 import EditableText from './EditableText';
+import TimeInput from './TimeInput';
 
 interface ActionBarProps {
   row: ActionBarRow;
@@ -32,23 +33,21 @@ export default function ActionBar({ row }: ActionBarProps) {
       <div className="flex items-center px-2 py-1">
         {/* Time range - left, fixed width */}
         <div className="w-[100px] shrink-0 flex items-center">
-          <EditableText
+          <TimeInput
             value={row.timeStart}
             onChange={(v) => {
-              const formatted = formatTimeInput(v);
-              const duration = calculateDuration(formatted, row.timeEnd);
-              updateRow(row.id, { timeStart: formatted, ...(duration ? { allowTime: duration } : {}) });
+              const duration = calculateDuration(v, row.timeEnd);
+              updateRow(row.id, { timeStart: v, ...(duration ? { allowTime: duration } : {}) });
             }}
             placeholder="Start"
             className="text-white text-[11px] [&_span]:text-white/60"
           />
           {(row.timeStart || row.timeEnd) && <span className="mx-0.5">-</span>}
-          <EditableText
+          <TimeInput
             value={row.timeEnd}
             onChange={(v) => {
-              const formatted = formatTimeInput(v);
-              const duration = calculateDuration(row.timeStart, formatted);
-              updateRow(row.id, { timeEnd: formatted, ...(duration ? { allowTime: duration } : {}) });
+              const duration = calculateDuration(row.timeStart, v);
+              updateRow(row.id, { timeEnd: v, ...(duration ? { allowTime: duration } : {}) });
             }}
             placeholder="End"
             className="text-white text-[11px] [&_span]:text-white/60"
