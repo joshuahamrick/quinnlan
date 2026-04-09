@@ -6,6 +6,17 @@ const LETTER_HEIGHT_IN = 11;
 const DPI = 96;
 const MARGIN_IN = 0.25;
 
+/** Collect the bottom-edge Y positions of every direct child of the schedule container, in image pixels. */
+function getRowBoundaries(element: HTMLElement, pixelRatio: number): number[] {
+  const children = element.children;
+  const boundaries: number[] = [];
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i] as HTMLElement;
+    boundaries.push((child.offsetTop + child.offsetHeight) * pixelRatio);
+  }
+  return boundaries;
+}
+
 export async function exportToPng(
   element: HTMLElement,
   filename: string,
@@ -56,25 +67,41 @@ export async function exportToPdf(
       // Fits on one page
       pdf.addImage(dataUrl, 'PNG', MARGIN_IN, MARGIN_IN, scaledWidth, scaledHeight);
     } else {
-      // Multi-page: slice the image across pages
-      // We need to figure out how much of the source image fits per page
+      // Multi-page: slice at row boundaries so rows are never cut in half
+      const pixelRatio = 2;
+      const rowBoundaries = getRowBoundaries(element, pixelRatio);
+
+      // How many source pixels fit per page
       const sourcePixelsPerPage = (usableHeight / scaledHeight) * img.height;
-      const totalPages = Math.ceil(img.height / sourcePixelsPerPage);
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
 
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) pdf.addPage('letter', 'portrait');
+      let currentY = 0;
+      let pageIndex = 0;
 
-        const srcY = page * sourcePixelsPerPage;
-        const srcH = Math.min(sourcePixelsPerPage, img.height - srcY);
+      while (currentY < img.height) {
+        if (pageIndex > 0) pdf.addPage('letter', 'portrait');
+
+        const maxY = currentY + sourcePixelsPerPage;
+
+        // Find the last row boundary that fits within this page
+        let bestBreak = currentY;
+        for (const boundary of rowBoundaries) {
+          if (boundary > currentY && boundary <= maxY) {
+            bestBreak = boundary;
+          }
+        }
+        // Fallback: if no boundary fits (single row taller than page), slice at max
+        if (bestBreak <= currentY) bestBreak = Math.min(maxY, img.height);
+
+        const srcH = bestBreak - currentY;
         const destH = (srcH / img.height) * scaledHeight;
 
         canvas.width = img.width;
         canvas.height = srcH;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, srcY, img.width, srcH, 0, 0, img.width, srcH);
+        ctx.drawImage(img, 0, currentY, img.width, srcH, 0, 0, img.width, srcH);
 
         const pageDataUrl = canvas.toDataURL('image/png');
         pdf.addImage(pageDataUrl, 'PNG', MARGIN_IN, MARGIN_IN, scaledWidth, destH);
@@ -84,6 +111,9 @@ export async function exportToPdf(
         pdf.setDrawColor(200, 200, 200);
         pdf.setLineWidth(0.5 / DPI);
         pdf.line(MARGIN_IN, contentBottom, LETTER_WIDTH_IN - MARGIN_IN, contentBottom);
+
+        currentY = bestBreak;
+        pageIndex++;
       }
     }
 
