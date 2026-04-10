@@ -172,7 +172,7 @@ export default function FormattingToolbar() {
             {/* Extracted logo colors */}
             {extractedColors.length > 0 && (
               <div className="mb-2">
-                <p className="text-[10px] font-medium text-gray-500 mb-1">From logos</p>
+                <p className="text-[10px] font-medium text-gray-500 mb-1">Logo Colors</p>
                 <div className="flex flex-wrap gap-1">
                   {extractedColors.map((color) => (
                     <button

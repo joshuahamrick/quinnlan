@@ -3,8 +3,8 @@
 import { createContext, useContext, useRef, useCallback, useState } from 'react';
 
 interface FormattingContextValue {
-  registerTextarea: (ref: HTMLTextAreaElement, setDraft: (text: string) => void) => void;
-  unregisterTextarea: () => void;
+  registerEditable: (ref: HTMLDivElement) => void;
+  unregisterEditable: () => void;
   applyFormatting: (type: 'bold' | 'italic' | 'bullet') => void;
   isActive: boolean;
 }
@@ -12,65 +12,64 @@ interface FormattingContextValue {
 const FormattingContext = createContext<FormattingContextValue | null>(null);
 
 export function FormattingProvider({ children }: { children: React.ReactNode }) {
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const draftSetterRef = useRef<((text: string) => void) | null>(null);
+  const editableRef = useRef<HTMLDivElement | null>(null);
   const [isActive, setIsActive] = useState(false);
 
-  const registerTextarea = useCallback((ref: HTMLTextAreaElement, setDraft: (text: string) => void) => {
-    textareaRef.current = ref;
-    draftSetterRef.current = setDraft;
+  const registerEditable = useCallback((ref: HTMLDivElement) => {
+    editableRef.current = ref;
     setIsActive(true);
   }, []);
 
-  const unregisterTextarea = useCallback(() => {
-    textareaRef.current = null;
-    draftSetterRef.current = null;
+  const unregisterEditable = useCallback(() => {
+    editableRef.current = null;
     setIsActive(false);
   }, []);
 
   const applyFormatting = useCallback((type: 'bold' | 'italic' | 'bullet') => {
-    const textarea = textareaRef.current;
-    const setDraft = draftSetterRef.current;
-    if (!textarea || !setDraft) return;
+    const editable = editableRef.current;
+    if (!editable) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
+    editable.focus();
 
-    let newText: string;
-    let cursorPos: number;
+    if (type === 'bold') {
+      document.execCommand('bold');
+    } else if (type === 'italic') {
+      document.execCommand('italic');
+    } else if (type === 'bullet') {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
 
-    if (type === 'bullet') {
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1;
-      const lineContent = text.slice(lineStart);
-      if (lineContent.startsWith('• ')) {
-        newText = text.slice(0, lineStart) + text.slice(lineStart + 2);
-        cursorPos = Math.max(start - 2, lineStart);
-      } else {
-        newText = text.slice(0, lineStart) + '• ' + text.slice(lineStart);
-        cursorPos = start + 2;
+      const range = selection.getRangeAt(0);
+      let node: Node | null = range.startContainer;
+      // Walk up to find the immediate child of the editable div
+      while (node && node.parentNode !== editable) {
+        node = node.parentNode;
       }
-    } else {
-      const wrapper = type === 'bold' ? '**' : '*';
-      if (start === end) {
-        newText = text.slice(0, start) + wrapper + wrapper + text.slice(end);
-        cursorPos = start + wrapper.length;
-      } else {
-        const selected = text.slice(start, end);
-        newText = text.slice(0, start) + wrapper + selected + wrapper + text.slice(end);
-        cursorPos = end + wrapper.length * 2;
+
+      if (node && node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        const text = el.textContent || '';
+        if (text.startsWith('• ')) {
+          el.textContent = text.slice(2);
+        } else {
+          el.textContent = '• ' + text;
+        }
+      } else if (node && node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || '';
+        if (text.startsWith('• ')) {
+          node.textContent = text.slice(2);
+        } else {
+          node.textContent = '• ' + text;
+        }
       }
+
+      // Trigger input event so React picks up the change
+      editable.dispatchEvent(new Event('input', { bubbles: true }));
     }
-
-    setDraft(newText);
-    requestAnimationFrame(() => {
-      textarea.focus();
-      textarea.setSelectionRange(cursorPos, cursorPos);
-    });
   }, []);
 
   return (
-    <FormattingContext.Provider value={{ registerTextarea, unregisterTextarea, applyFormatting, isActive }}>
+    <FormattingContext.Provider value={{ registerEditable, unregisterEditable, applyFormatting, isActive }}>
       {children}
     </FormattingContext.Provider>
   );
@@ -80,4 +79,78 @@ export function useFormatting() {
   const ctx = useContext(FormattingContext);
   if (!ctx) throw new Error('useFormatting must be used within FormattingProvider');
   return ctx;
+}
+
+/** Convert markdown-style text to HTML for contentEditable */
+export function markdownToHtml(text: string): string {
+  return text
+    .split('\n')
+    .map((line) => {
+      // Convert **bold** and *italic*
+      let html = line
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>');
+      return `<div>${html || '<br>'}</div>`;
+    })
+    .join('');
+}
+
+/** Convert contentEditable HTML back to markdown-style text */
+export function htmlToMarkdown(html: string): string {
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+
+  const lines: string[] = [];
+
+  function processNode(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || '';
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    const el = node as HTMLElement;
+    const tag = el.tagName.toLowerCase();
+
+    let inner = Array.from(el.childNodes).map(processNode).join('');
+
+    if (tag === 'strong' || tag === 'b') return `**${inner}**`;
+    if (tag === 'em' || tag === 'i') return `*${inner}*`;
+    if (tag === 'br') return '\n';
+    if (tag === 'div' || tag === 'p') {
+      lines.push(inner);
+      return '';
+    }
+    return inner;
+  }
+
+  // If the HTML has div/p children, process them as lines
+  const children = Array.from(temp.childNodes);
+  const hasDivs = children.some(
+    (n) => n.nodeType === Node.ELEMENT_NODE && ['DIV', 'P'].includes((n as HTMLElement).tagName)
+  );
+
+  if (hasDivs) {
+    children.forEach((child) => {
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        const el = child as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'div' || tag === 'p') {
+          const inner = Array.from(el.childNodes).map(processNode).join('');
+          lines.push(inner);
+        } else {
+          // Inline element at top level
+          const text = processNode(child);
+          if (text) lines.push(text);
+        }
+      } else if (child.nodeType === Node.TEXT_NODE) {
+        const text = child.textContent || '';
+        if (text.trim()) lines.push(text);
+      }
+    });
+  } else {
+    // No divs — flat content, split on <br>
+    const text = Array.from(temp.childNodes).map(processNode).join('');
+    return text;
+  }
+
+  return lines.join('\n');
 }

@@ -7,6 +7,7 @@ import type {
   CallTime,
   TalentCall,
   BgCall,
+  QuickRefEntry,
   ScheduleRow,
   SceneRow,
   ActionBarRow,
@@ -62,12 +63,14 @@ function createDefaultSchedule(): Schedule {
     logoScale: 1.0,
     fontFamily: 'Nunito',
 
-    productionTime: '',
-    generalTime: '',
-    artistTime: '',
-    setupTimeStart: '',
-    setupTimeEnd: '',
+    quickRefEntries: [
+      { id: crypto.randomUUID(), label: 'Production', time: '' },
+      { id: crypto.randomUUID(), label: 'General', time: '' },
+      { id: crypto.randomUUID(), label: 'Artist', time: '' },
+      { id: crypto.randomUUID(), label: 'Setup', time: '' },
+    ],
 
+    crewCallLabel: 'General Crew Call + Safety Meeting',
     crewCallTime: '',
     rows: [
       {
@@ -130,6 +133,11 @@ interface ScheduleStore {
   addTalentCall: () => void;
   removeTalentCall: (id: string) => void;
   updateTalentCall: (id: string, updates: Partial<Omit<TalentCall, 'id'>>) => void;
+
+  // Quick ref entries
+  addQuickRefEntry: () => void;
+  removeQuickRefEntry: (id: string) => void;
+  updateQuickRefEntry: (id: string, updates: Partial<Omit<QuickRefEntry, 'id'>>) => void;
 
   // BG calls
   addBgCall: () => void;
@@ -275,6 +283,34 @@ export const useScheduleStore = create<ScheduleStore>()(
             ...state.schedule,
             talentCalls: state.schedule.talentCalls.map((tc) =>
               tc.id === id ? { ...tc, ...updates } : tc
+            ),
+          },
+        })),
+
+      // Quick ref entries
+      addQuickRefEntry: () =>
+        set((state) => ({
+          schedule: {
+            ...state.schedule,
+            quickRefEntries: [
+              ...state.schedule.quickRefEntries,
+              { id: crypto.randomUUID(), label: '', time: '' },
+            ],
+          },
+        })),
+      removeQuickRefEntry: (id) =>
+        set((state) => ({
+          schedule: {
+            ...state.schedule,
+            quickRefEntries: state.schedule.quickRefEntries.filter((e) => e.id !== id),
+          },
+        })),
+      updateQuickRefEntry: (id, updates) =>
+        set((state) => ({
+          schedule: {
+            ...state.schedule,
+            quickRefEntries: state.schedule.quickRefEntries.map((e) =>
+              e.id === id ? { ...e, ...updates } : e
             ),
           },
         })),

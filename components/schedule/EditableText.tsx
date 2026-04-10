@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useFormatting } from '@/lib/formatting-context';
+import { useFormatting, markdownToHtml, htmlToMarkdown } from '@/lib/formatting-context';
 
 interface EditableTextProps {
   value: string;
@@ -61,34 +61,51 @@ export default function EditableText({
 }: EditableTextProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
-  const { registerTextarea, unregisterTextarea } = useFormatting();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const editableRef = useRef<HTMLDivElement>(null);
+  const { registerEditable, unregisterEditable } = useFormatting();
 
   useEffect(() => {
     setDraft(value);
   }, [value]);
 
   useEffect(() => {
-    if (editing && inputRef.current) {
+    if (editing && multiline && editableRef.current) {
+      editableRef.current.innerHTML = markdownToHtml(draft);
+      editableRef.current.focus();
+      // Select all content
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        range.selectNodeContents(editableRef.current);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      registerEditable(editableRef.current);
+    } else if (editing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
-
-      // Register multiline textareas with the formatting context
-      if (multiline && inputRef.current instanceof HTMLTextAreaElement) {
-        registerTextarea(inputRef.current, setDraft);
-      }
     }
     if (!editing && multiline) {
-      unregisterTextarea();
+      unregisterEditable();
     }
-  }, [editing, multiline, registerTextarea, unregisterTextarea]);
+  }, [editing, multiline, registerEditable, unregisterEditable]);
 
   const save = useCallback(() => {
-    setEditing(false);
-    if (draft !== value) {
-      onChange(draft);
+    if (multiline && editableRef.current) {
+      const md = htmlToMarkdown(editableRef.current.innerHTML);
+      setEditing(false);
+      if (md !== value) {
+        setDraft(md);
+        onChange(md);
+      }
+    } else {
+      setEditing(false);
+      if (draft !== value) {
+        onChange(draft);
+      }
     }
-  }, [draft, value, onChange]);
+  }, [draft, value, onChange, multiline]);
 
   const cancel = useCallback(() => {
     setEditing(false);
@@ -125,21 +142,22 @@ export default function EditableText({
 
   if (multiline) {
     return (
-      <textarea
-        ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+      <div
+        ref={editableRef}
+        contentEditable
+        suppressContentEditableWarning
         onBlur={save}
         onKeyDown={handleKeyDown}
-        className={`w-full border border-blue-400 rounded px-1 py-0.5 text-sm outline-none resize-y min-h-[3em] ${className} ${inputAlign}`}
-        placeholder={placeholder}
+        className={`w-full border border-blue-400 rounded px-1 py-0.5 text-sm outline-none min-h-[3em] whitespace-pre-wrap ${className} ${inputAlign}`}
+        style={{ resize: 'vertical', overflow: 'auto' }}
+        data-placeholder={placeholder}
       />
     );
   }
 
   return (
     <input
-      ref={inputRef as React.RefObject<HTMLInputElement>}
+      ref={inputRef}
       type="text"
       value={draft}
       onChange={(e) => setDraft(e.target.value)}

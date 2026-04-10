@@ -1,6 +1,7 @@
 'use client';
 
 import { useScheduleStore } from '@/lib/store';
+import EditableText from './EditableText';
 import TimeInput from './TimeInput';
 
 export default function CrewCallRow() {
@@ -17,7 +18,12 @@ export default function CrewCallRow() {
         />
       </div>
       <div className="px-2 py-1 font-semibold">
-        General Crew Call + Safety Meeting
+        <EditableText
+          value={schedule.crewCallLabel}
+          onChange={(v) => updateField('crewCallLabel', v)}
+          placeholder="General Crew Call + Safety Meeting"
+          className="text-[11px] font-semibold"
+        />
       </div>
     </div>
   );

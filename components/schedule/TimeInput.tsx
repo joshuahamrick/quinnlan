@@ -214,7 +214,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         inputMode="numeric"
         value={hours}
         onChange={handleHoursChange}
-        onFocus={handleFocus}
+        onFocus={(e) => { handleFocus(); e.target.select(); }}
         onKeyDown={handleHoursKeyDown}
         placeholder="H"
         className={`w-[1.6em] text-center border rounded-l px-0 py-0.5 outline-none ${inputClasses}`}
@@ -227,7 +227,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         inputMode="numeric"
         value={minutes}
         onChange={handleMinutesChange}
-        onFocus={handleFocus}
+        onFocus={(e) => { handleFocus(); e.target.select(); }}
         onKeyDown={handleMinutesKeyDown}
         placeholder="MM"
         className={`w-[2em] text-center border px-0 py-0.5 outline-none ${inputClasses}`}
@@ -237,7 +237,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         ref={periodRef}
         type="button"
         onClick={togglePeriod}
-        onFocus={handleFocus}
+        onFocus={() => handleFocus()}
         onKeyDown={handlePeriodKeyDown}
         className={`w-[1.4em] text-center border rounded-r px-0 py-0.5 outline-none cursor-pointer ${buttonClasses}`}
         style={{ fontSize: 'inherit' }}

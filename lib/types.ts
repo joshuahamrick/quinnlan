@@ -37,14 +37,11 @@ export interface Schedule {
   // Font
   fontFamily: string;
 
-  // Quick reference times
-  productionTime: string;
-  generalTime: string;
-  artistTime: string;
-  setupTimeStart: string;
-  setupTimeEnd: string;
+  // Quick reference entries
+  quickRefEntries: QuickRefEntry[];
 
   // Schedule body
+  crewCallLabel: string;
   crewCallTime: string;
   rows: ScheduleRow[];
 }
@@ -75,6 +72,12 @@ export interface TalentCall {
 }
 
 export interface BgCall {
+  id: string;
+  label: string;
+  time: string;
+}
+
+export interface QuickRefEntry {
   id: string;
   label: string;
   time: string;
