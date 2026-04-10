@@ -415,6 +415,24 @@ export const useScheduleStore = create<ScheduleStore>()(
     }),
     {
       name: 'quinnlan-schedule',
+      merge: (persistedState: unknown, currentState: ScheduleStore): ScheduleStore => {
+        if (!persistedState) return currentState;
+        const persisted = persistedState as ScheduleStore;
+        const schedule = {
+          ...currentState.schedule,
+          ...persisted.schedule,
+          quickRefEntries: persisted.schedule?.quickRefEntries || currentState.schedule.quickRefEntries,
+          crewCallLabel: persisted.schedule?.crewCallLabel || currentState.schedule.crewCallLabel,
+          fontFamily: persisted.schedule?.fontFamily || currentState.schedule.fontFamily,
+          logoScale: persisted.schedule?.logoScale ?? currentState.schedule.logoScale,
+          hospitalDepartment: persisted.schedule?.hospitalDepartment ?? currentState.schedule.hospitalDepartment,
+        };
+        return {
+          ...currentState,
+          ...persisted,
+          schedule,
+        };
+      },
     }
   )
 );

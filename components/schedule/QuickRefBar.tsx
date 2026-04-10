@@ -13,7 +13,7 @@ export default function QuickRefBar() {
       style={{ backgroundColor: schedule.themeColor }}
     >
       <div className="flex items-center justify-center gap-2">
-        {schedule.quickRefEntries.map((entry, index) => (
+        {(schedule.quickRefEntries || []).map((entry, index) => (
           <div key={entry.id} className="group flex items-center gap-1">
             {index > 0 && <span className="mx-1 text-white/50">|</span>}
             <EditableText

@@ -19,7 +19,7 @@ export default function CrewCallRow() {
       </div>
       <div className="px-2 py-1 font-semibold">
         <EditableText
-          value={schedule.crewCallLabel}
+          value={schedule.crewCallLabel || 'General Crew Call + Safety Meeting'}
           onChange={(v) => updateField('crewCallLabel', v)}
           placeholder="General Crew Call + Safety Meeting"
           className="text-[11px] font-semibold"

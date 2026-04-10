@@ -90,9 +90,9 @@ export default function FormattingToolbar() {
         <button
           onClick={() => setFontOpen(!fontOpen)}
           className="flex items-center gap-1 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200 rounded transition-colors min-w-[100px]"
-          style={{ fontFamily: schedule.fontFamily }}
+          style={{ fontFamily: schedule.fontFamily || 'Nunito' }}
         >
-          <span className="truncate">{schedule.fontFamily}</span>
+          <span className="truncate">{schedule.fontFamily || 'Nunito'}</span>
           <svg width="10" height="10" viewBox="0 0 10 10" className="shrink-0 text-gray-400">
             <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

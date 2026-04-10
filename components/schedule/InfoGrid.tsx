@@ -106,7 +106,7 @@ export default function InfoGrid() {
                   alt={logo.name}
                   className="max-w-full object-contain"
                   style={{
-                    maxHeight: `${96 * schedule.logoScale}px`,
+                    maxHeight: `${96 * (schedule.logoScale ?? 1)}px`,
                   }}
                 />
               ))
@@ -700,7 +700,7 @@ function LogoResizeHandle({ isDraggingRef }: { isDraggingRef: React.MutableRefOb
     e.stopPropagation();
     e.preventDefault();
 
-    const currentScale = useScheduleStore.getState().schedule.logoScale;
+    const currentScale = useScheduleStore.getState().schedule.logoScale ?? 1;
     isDraggingRef.current = true;
     dragState.current = { startY: e.clientY, startScale: currentScale };
 
