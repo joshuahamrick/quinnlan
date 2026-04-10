@@ -21,10 +21,10 @@ const PRESET_COLORS = [
   '#264653', '#e76f51', '#f4a261', '#2a9d8f',
 ];
 
-type ColorTarget = 'theme' | 'wrap' | 'taillights';
+type ColorTarget = 'theme';
 
 export default function FormattingToolbar() {
-  const { schedule, updateField, setThemeColor, setWrapColor, setTaillightsColor } = useScheduleStore();
+  const { schedule, updateField, setThemeColor } = useScheduleStore();
   const { applyFormatting, isActive } = useFormatting();
 
   const [fontOpen, setFontOpen] = useState(false);
@@ -71,29 +71,9 @@ export default function FormattingToolbar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const getColorValue = (target: ColorTarget) => {
-    switch (target) {
-      case 'theme': return schedule.themeColor;
-      case 'wrap': return schedule.wrapColor;
-      case 'taillights': return schedule.taillightsColor;
-    }
-  };
-
-  const getColorLabel = (target: ColorTarget) => {
-    switch (target) {
-      case 'theme': return 'Theme';
-      case 'wrap': return 'Wrap';
-      case 'taillights': return 'Taillights';
-    }
-  };
-
-  const setColorValue = (target: ColorTarget, color: string) => {
-    switch (target) {
-      case 'theme': setThemeColor(color); break;
-      case 'wrap': setWrapColor(color); break;
-      case 'taillights': setTaillightsColor(color); break;
-    }
-  };
+  const getColorValue = () => schedule.themeColor;
+  const getColorLabel = () => 'Theme';
+  const setColorValue = (_target: ColorTarget, color: string) => setThemeColor(color);
 
   const handleFontChange = (font: string) => {
     updateField('fontFamily', font);
@@ -173,91 +153,89 @@ export default function FormattingToolbar() {
       {/* Separator */}
       <div className="h-5 w-px bg-gray-300 mx-1" />
 
-      {/* Color controls */}
-      {(['theme', 'wrap', 'taillights'] as ColorTarget[]).map((target) => (
-        <div key={target} ref={activeColorPicker === target ? colorPickerRef : undefined} className="relative">
-          <button
-            onClick={() => setActiveColorPicker(activeColorPicker === target ? null : target)}
-            className="flex items-center gap-1.5 px-1.5 py-1 hover:bg-gray-200 rounded transition-colors"
-            title={`${getColorLabel(target)} Color`}
-          >
-            <div
-              className="size-5 rounded-full border border-gray-300"
-              style={{ backgroundColor: getColorValue(target) }}
-            />
-            <span className="text-[10px] text-gray-500">{getColorLabel(target)}</span>
-          </button>
+      {/* Theme color control */}
+      <div ref={activeColorPicker === 'theme' ? colorPickerRef : undefined} className="relative">
+        <button
+          onClick={() => setActiveColorPicker(activeColorPicker === 'theme' ? null : 'theme')}
+          className="flex items-center gap-1.5 px-1.5 py-1 hover:bg-gray-200 rounded transition-colors"
+          title={`${getColorLabel()} Color`}
+        >
+          <div
+            className="size-5 rounded-full border border-gray-300"
+            style={{ backgroundColor: getColorValue() }}
+          />
+          <span className="text-[10px] text-gray-500">{getColorLabel()}</span>
+        </button>
 
-          {activeColorPicker === target && (
-            <div className="absolute top-full left-0 mt-1 z-50 w-52 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-              {/* Extracted logo colors */}
-              {extractedColors.length > 0 && (
-                <div className="mb-2">
-                  <p className="text-[10px] font-medium text-gray-500 mb-1">From logos</p>
-                  <div className="flex flex-wrap gap-1">
-                    {extractedColors.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setColorValue(target, color)}
-                        className="size-5 rounded-full border-2 transition-shadow"
-                        style={{
-                          backgroundColor: color,
-                          borderColor: getColorValue(target) === color ? 'black' : 'transparent',
-                          boxShadow: getColorValue(target) === color ? `0 0 0 2px ${color}` : 'none',
-                        }}
-                        aria-label={`Select color ${color}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Preset colors */}
+        {activeColorPicker === 'theme' && (
+          <div className="absolute top-full left-0 mt-1 z-50 w-52 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+            {/* Extracted logo colors */}
+            {extractedColors.length > 0 && (
               <div className="mb-2">
-                <p className="text-[10px] font-medium text-gray-500 mb-1">Presets</p>
+                <p className="text-[10px] font-medium text-gray-500 mb-1">From logos</p>
                 <div className="flex flex-wrap gap-1">
-                  {PRESET_COLORS.map((color) => (
+                  {extractedColors.map((color) => (
                     <button
                       key={color}
-                      onClick={() => setColorValue(target, color)}
+                      onClick={() => setColorValue('theme', color)}
                       className="size-5 rounded-full border-2 transition-shadow"
                       style={{
                         backgroundColor: color,
-                        borderColor: getColorValue(target) === color ? 'black' : 'transparent',
-                        boxShadow: getColorValue(target) === color ? `0 0 0 2px ${color}` : 'none',
+                        borderColor: getColorValue() === color ? 'black' : 'transparent',
+                        boxShadow: getColorValue() === color ? `0 0 0 2px ${color}` : 'none',
                       }}
                       aria-label={`Select color ${color}`}
                     />
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Custom color input */}
-              <div>
-                <p className="text-[10px] font-medium text-gray-500 mb-1">Custom</p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={getColorValue(target)}
-                    onChange={(e) => setColorValue(target, e.target.value)}
-                    className="h-7 w-10 cursor-pointer rounded border border-gray-200 bg-transparent p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={getColorValue(target)}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setColorValue(target, v);
+            {/* Preset colors */}
+            <div className="mb-2">
+              <p className="text-[10px] font-medium text-gray-500 mb-1">Presets</p>
+              <div className="flex flex-wrap gap-1">
+                {PRESET_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setColorValue('theme', color)}
+                    className="size-5 rounded-full border-2 transition-shadow"
+                    style={{
+                      backgroundColor: color,
+                      borderColor: getColorValue() === color ? 'black' : 'transparent',
+                      boxShadow: getColorValue() === color ? `0 0 0 2px ${color}` : 'none',
                     }}
-                    className="h-7 w-20 rounded border border-gray-200 bg-white px-2 text-xs font-mono"
-                    placeholder="#000000"
+                    aria-label={`Select color ${color}`}
                   />
-                </div>
+                ))}
               </div>
             </div>
-          )}
-        </div>
-      ))}
+
+            {/* Custom color input */}
+            <div>
+              <p className="text-[10px] font-medium text-gray-500 mb-1">Custom</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={getColorValue()}
+                  onChange={(e) => setColorValue('theme', e.target.value)}
+                  className="h-7 w-10 cursor-pointer rounded border border-gray-200 bg-transparent p-0.5"
+                />
+                <input
+                  type="text"
+                  value={getColorValue()}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setColorValue('theme', v);
+                  }}
+                  className="h-7 w-20 rounded border border-gray-200 bg-white px-2 text-xs font-mono"
+                  placeholder="#000000"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

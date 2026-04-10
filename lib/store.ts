@@ -124,6 +124,7 @@ interface ScheduleStore {
   addCallTime: () => void;
   removeCallTime: (id: string) => void;
   updateCallTime: (id: string, updates: Partial<Omit<CallTime, 'id'>>) => void;
+  reorderCallTimes: (fromIndex: number, toIndex: number) => void;
 
   // Talent calls
   addTalentCall: () => void;
@@ -242,6 +243,13 @@ export const useScheduleStore = create<ScheduleStore>()(
             ),
           },
         })),
+      reorderCallTimes: (fromIndex, toIndex) =>
+        set((state) => {
+          const callTimes = [...state.schedule.callTimes];
+          const [moved] = callTimes.splice(fromIndex, 1);
+          callTimes.splice(toIndex, 0, moved);
+          return { schedule: { ...state.schedule, callTimes } };
+        }),
 
       // Talent calls
       addTalentCall: () =>

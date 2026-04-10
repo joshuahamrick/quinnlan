@@ -20,6 +20,7 @@ export default function InfoGrid() {
     addCallTime,
     removeCallTime,
     updateCallTime,
+    reorderCallTimes,
     addTalentCall,
     removeTalentCall,
     updateTalentCall,
@@ -33,6 +34,8 @@ export default function InfoGrid() {
   const [logoDragIndex, setLogoDragIndex] = useState<number | null>(null);
   const [logoDropTarget, setLogoDropTarget] = useState<number | null>(null);
   const [logoDropZoneActive, setLogoDropZoneActive] = useState(false);
+  const [callTimeDragIndex, setCallTimeDragIndex] = useState<number | null>(null);
+  const [callTimeDropTarget, setCallTimeDropTarget] = useState<number | null>(null);
 
   const handleLogoDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -71,7 +74,7 @@ export default function InfoGrid() {
           <div className="font-extrabold text-[10px] uppercase mb-1">Contacts:</div>
           <div className="flex-1 flex flex-col justify-center text-left">
             {schedule.contacts.map((c) => (
-              <div key={c.id} className="mb-2.5 last:mb-0">
+              <div key={c.id} className="mb-5 last:mb-0 space-y-0.5 leading-relaxed">
                 {c.title && <div className="font-semibold text-[10px]">{c.title}</div>}
                 {c.name && <div className="text-[10px]">{c.name}</div>}
                 {c.phone && <div className="text-[10px]">{c.phone}</div>}
@@ -367,29 +370,71 @@ export default function InfoGrid() {
         onClose={() => setActiveModal(null)}
         title="Call Times"
       >
-        <div className="space-y-3">
-          {schedule.callTimes.map((ct) => (
-            <div key={ct.id} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={ct.time}
-                onChange={(e) => updateCallTime(ct.id, { time: e.target.value })}
-                placeholder="Time (e.g. 7:30A)"
-                className="w-28 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 font-semibold"
-              />
-              <input
-                type="text"
-                value={ct.label}
-                onChange={(e) => updateCallTime(ct.id, { label: e.target.value })}
-                placeholder="Label (e.g. Production)"
-                className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
-              />
-              <button
-                onClick={() => removeCallTime(ct.id)}
-                className="text-red-500 hover:text-red-700 text-xs shrink-0"
+        <div className="space-y-1">
+          {schedule.callTimes.map((ct, index) => (
+            <div key={ct.id}>
+              {callTimeDropTarget === index && callTimeDragIndex !== index && callTimeDragIndex !== index - 1 && (
+                <div className="h-0.5 bg-blue-500 rounded-full mx-3 my-1" />
+              )}
+              <div
+                draggable
+                onDragStart={(e) => {
+                  setCallTimeDragIndex(index);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setCallTimeDropTarget(index);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (callTimeDragIndex !== null && callTimeDragIndex !== index) {
+                    reorderCallTimes(callTimeDragIndex, index);
+                  }
+                  setCallTimeDragIndex(null);
+                  setCallTimeDropTarget(null);
+                }}
+                onDragEnd={() => {
+                  setCallTimeDragIndex(null);
+                  setCallTimeDropTarget(null);
+                }}
+                className={`flex items-center gap-2 ${callTimeDragIndex === index ? 'opacity-40' : ''}`}
               >
-                Remove
-              </button>
+                <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 shrink-0 px-1">
+                  <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
+                    <circle cx="2" cy="2" r="1.5" />
+                    <circle cx="6" cy="2" r="1.5" />
+                    <circle cx="2" cy="7" r="1.5" />
+                    <circle cx="6" cy="7" r="1.5" />
+                    <circle cx="2" cy="12" r="1.5" />
+                    <circle cx="6" cy="12" r="1.5" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={ct.time}
+                  onChange={(e) => updateCallTime(ct.id, { time: e.target.value })}
+                  placeholder="Time (e.g. 7:30A)"
+                  className="w-28 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 font-semibold"
+                />
+                <input
+                  type="text"
+                  value={ct.label}
+                  onChange={(e) => updateCallTime(ct.id, { label: e.target.value })}
+                  placeholder="Label (e.g. Production)"
+                  className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+                />
+                <button
+                  onClick={() => removeCallTime(ct.id)}
+                  className="text-red-500 hover:text-red-700 text-xs shrink-0"
+                >
+                  Remove
+                </button>
+              </div>
+              {callTimeDropTarget === schedule.callTimes.length - 1 && index === schedule.callTimes.length - 1 && callTimeDragIndex !== index && (
+                <div className="h-0.5 bg-blue-500 rounded-full mx-3 my-1" />
+              )}
             </div>
           ))}
           <button
