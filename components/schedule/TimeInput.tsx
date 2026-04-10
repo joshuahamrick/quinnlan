@@ -7,6 +7,9 @@ interface TimeInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  id?: string; // sets id on the hours input so other TimeInputs can focus it
+  nextInputId?: string; // when Tab is pressed on period, focus element with this id
+  variant?: 'light' | 'dark'; // 'dark' for colored backgrounds (banners)
 }
 
 function parseTimeValue(value: string): { hours: string; minutes: string; period: string } {
@@ -23,7 +26,7 @@ function parseTimeValue(value: string): { hours: string; minutes: string; period
   return { hours, minutes, period };
 }
 
-export default function TimeInput({ value, onChange, placeholder, className = '' }: TimeInputProps) {
+export default function TimeInput({ value, onChange, placeholder, className = '', id, nextInputId, variant = 'light' }: TimeInputProps) {
   const parsed = parseTimeValue(value);
   const [hours, setHours] = useState(parsed.hours);
   const [minutes, setMinutes] = useState(parsed.minutes);
@@ -138,6 +141,12 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
       e.preventDefault();
       setPeriod('P');
       emit(hours, minutes, 'P');
+    } else if (e.key === 'Tab' && !e.shiftKey && nextInputId) {
+      e.preventDefault();
+      const target = document.getElementById(nextInputId);
+      if (target) {
+        target.focus();
+      }
     } else if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault();
       minutesRef.current?.focus();
@@ -153,6 +162,14 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   };
 
   const hasValue = !!value;
+
+  const inputClasses = variant === 'dark'
+    ? 'bg-transparent text-white border-white/40 focus:border-white'
+    : 'bg-white text-inherit border-transparent focus:border-blue-400';
+
+  const buttonClasses = variant === 'dark'
+    ? 'bg-transparent text-white border-white/40 focus:border-white hover:bg-white/10'
+    : 'bg-white text-inherit border-transparent focus:border-blue-400 hover:bg-blue-50';
 
   // When not focused and empty, show placeholder
   if (!focused && !hasValue) {
@@ -192,6 +209,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     >
       <input
         ref={hoursRef}
+        id={id}
         type="text"
         inputMode="numeric"
         value={hours}
@@ -199,7 +217,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onFocus={handleFocus}
         onKeyDown={handleHoursKeyDown}
         placeholder="H"
-        className="w-[1.6em] text-center border border-transparent focus:border-blue-400 rounded-l px-0 py-0.5 outline-none bg-white text-inherit"
+        className={`w-[1.6em] text-center border rounded-l px-0 py-0.5 outline-none ${inputClasses}`}
         style={{ fontSize: 'inherit' }}
       />
       <span className="text-inherit select-none" style={{ fontSize: 'inherit' }}>:</span>
@@ -212,7 +230,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onFocus={handleFocus}
         onKeyDown={handleMinutesKeyDown}
         placeholder="MM"
-        className="w-[2em] text-center border border-transparent focus:border-blue-400 px-0 py-0.5 outline-none bg-white text-inherit"
+        className={`w-[2em] text-center border px-0 py-0.5 outline-none ${inputClasses}`}
         style={{ fontSize: 'inherit' }}
       />
       <button
@@ -221,7 +239,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onClick={togglePeriod}
         onFocus={handleFocus}
         onKeyDown={handlePeriodKeyDown}
-        className="w-[1.4em] text-center border border-transparent focus:border-blue-400 rounded-r px-0 py-0.5 outline-none bg-white text-inherit cursor-pointer hover:bg-blue-50"
+        className={`w-[1.4em] text-center border rounded-r px-0 py-0.5 outline-none cursor-pointer ${buttonClasses}`}
         style={{ fontSize: 'inherit' }}
       >
         {period || 'A'}

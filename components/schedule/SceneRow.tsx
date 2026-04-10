@@ -61,6 +61,8 @@ export default function SceneRow({ row }: SceneRowProps) {
           }}
           placeholder="Start"
           className="text-[11px] font-semibold text-center"
+          id={`start-${row.id}`}
+          nextInputId={`end-${row.id}`}
         />
         <div className="text-[10px] text-gray-500 text-center">to</div>
         <TimeInput
@@ -71,6 +73,7 @@ export default function SceneRow({ row }: SceneRowProps) {
           }}
           placeholder="End"
           className="text-[11px] font-semibold text-center"
+          id={`end-${row.id}`}
         />
       </div>
 

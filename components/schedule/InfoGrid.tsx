@@ -64,17 +64,17 @@ export default function InfoGrid() {
       >
         {/* CONTACTS — full height, centered */}
         <div
-          className="border-r border-gray-300 p-2 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-blue-50/40 transition-colors"
+          className="border-r border-gray-300 p-2 flex flex-col cursor-pointer hover:bg-blue-50/40 transition-colors"
           style={{ gridRow: '1 / 3' }}
           onClick={() => setActiveModal('contacts')}
         >
-          <div className="font-extrabold text-[10px] uppercase mb-1.5">Contacts:</div>
-          <div className="text-left">
+          <div className="font-extrabold text-[10px] uppercase mb-1">Contacts:</div>
+          <div className="flex-1 flex flex-col justify-center text-left">
             {schedule.contacts.map((c) => (
-              <div key={c.id} className="mb-1">
-                {c.title && <div className="font-semibold text-[9px]">{c.title}</div>}
-                {c.name && <div className="text-[9px]">{c.name}</div>}
-                {c.phone && <div className="text-[9px]">{c.phone}</div>}
+              <div key={c.id} className="mb-2.5 last:mb-0">
+                {c.title && <div className="font-semibold text-[10px]">{c.title}</div>}
+                {c.name && <div className="text-[10px]">{c.name}</div>}
+                {c.phone && <div className="text-[10px]">{c.phone}</div>}
               </div>
             ))}
             {schedule.contacts.length === 0 && (
@@ -117,7 +117,7 @@ export default function InfoGrid() {
 
         {/* CALL TIMES — full height */}
         <div
-          className="border-r border-gray-300 p-2 cursor-pointer hover:bg-blue-50/40 transition-colors"
+          className="border-r border-gray-300 p-2 flex flex-col justify-evenly cursor-pointer hover:bg-blue-50/40 transition-colors"
           style={{ gridRow: '1 / 3' }}
           onClick={() => setActiveModal('callTimes')}
         >
@@ -125,7 +125,7 @@ export default function InfoGrid() {
             const hasTime = ct.time.trim() !== '';
             const hasLabel = ct.label.trim() !== '';
             return (
-              <div key={ct.id} className="mb-0.5">
+              <div key={ct.id}>
                 {hasTime && hasLabel ? (
                   <span>
                     <span className="font-semibold">{ct.time}:</span> {ct.label}
@@ -190,21 +190,24 @@ export default function InfoGrid() {
           ) : (
             <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
           )}
-          <div className="mt-1.5 space-y-0.5">
-            {schedule.date && (
+          <div className="mt-2 space-y-0.5">
+            {schedule.date ? (
               <div className="font-extrabold uppercase text-[9px]">{schedule.date}</div>
+            ) : (
+              <div className="text-gray-400 italic text-[9px]" data-export-hide>Date</div>
             )}
-            {schedule.sunrise && (
-              <div><span className="font-semibold">Sunrise:</span> {schedule.sunrise}{schedule.sunset ? ` | Sunset: ${schedule.sunset}` : ''}</div>
+            {schedule.sunrise || schedule.sunset ? (
+              <div>Sunrise: {schedule.sunrise || '—'} | Sunset: {schedule.sunset || '—'}</div>
+            ) : (
+              <div className="text-gray-400 italic text-[9px]" data-export-hide>Sunrise/Sunset</div>
             )}
-            {schedule.weather && (
-              <div><span className="font-semibold">Weather:</span> {schedule.weather}</div>
+            {schedule.weather ? (
+              <div>{schedule.weather}</div>
+            ) : (
+              <div className="text-gray-400 italic text-[9px]" data-export-hide>Weather</div>
             )}
             {(schedule.dayNumber || schedule.totalDays) && (
               <div className="font-semibold">Day {schedule.dayNumber} of {schedule.totalDays}</div>
-            )}
-            {!schedule.date && !schedule.sunrise && !schedule.weather && (
-              <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set date/weather</div>
             )}
           </div>
         </div>
@@ -489,6 +492,16 @@ export default function InfoGrid() {
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
             />
           </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Date</label>
+            <input
+              type="text"
+              value={schedule.date}
+              onChange={(e) => updateField('date', e.target.value)}
+              placeholder="e.g. Thursday, March 19th"
+              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Sunrise</label>
@@ -520,6 +533,28 @@ export default function InfoGrid() {
               placeholder="e.g. Mostly Sunny"
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Day Number</label>
+              <input
+                type="number"
+                min={1}
+                value={schedule.dayNumber}
+                onChange={(e) => updateField('dayNumber', parseInt(e.target.value) || 1)}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Total Days</label>
+              <input
+                type="number"
+                min={1}
+                value={schedule.totalDays}
+                onChange={(e) => updateField('totalDays', parseInt(e.target.value) || 1)}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+              />
+            </div>
           </div>
         </div>
       </SectionModal>
