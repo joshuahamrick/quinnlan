@@ -20,7 +20,7 @@ export default function ScheduleEditPage() {
 
   return (
     <FormattingProvider>
-      <div className="flex flex-1 flex-col overflow-auto">
+      <div className="flex flex-1 flex-col">
         {/* Sticky toolbar area */}
         <div className="sticky top-0 z-40 bg-white shadow-sm" data-export-hide>
           {/* Nav toolbar */}
