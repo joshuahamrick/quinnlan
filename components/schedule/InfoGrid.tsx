@@ -24,6 +24,7 @@ export default function InfoGrid() {
     addTalentCall,
     removeTalentCall,
     updateTalentCall,
+    reorderTalentCalls,
     addBgCall,
     removeBgCall,
     updateBgCall,
@@ -36,6 +37,8 @@ export default function InfoGrid() {
   const [logoDropZoneActive, setLogoDropZoneActive] = useState(false);
   const [callTimeDragIndex, setCallTimeDragIndex] = useState<number | null>(null);
   const [callTimeDropTarget, setCallTimeDropTarget] = useState<number | null>(null);
+  const [talentCallDragIndex, setTalentCallDragIndex] = useState<number | null>(null);
+  const [talentCallDropTarget, setTalentCallDropTarget] = useState<number | null>(null);
 
   const handleLogoDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -454,30 +457,74 @@ export default function InfoGrid() {
       >
         <div className="space-y-4">
           <h3 className="text-xs font-bold uppercase text-gray-600">Talent Calls</h3>
-          {schedule.talentCalls.map((tc) => (
-            <div key={tc.id} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={tc.label}
-                onChange={(e) => updateTalentCall(tc.id, { label: e.target.value })}
-                placeholder="Label"
-                className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
-              />
-              <input
-                type="text"
-                value={tc.time}
-                onChange={(e) => updateTalentCall(tc.id, { time: e.target.value })}
-                placeholder="Time"
-                className="w-28 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 font-semibold"
-              />
-              <button
-                onClick={() => removeTalentCall(tc.id)}
-                className="text-red-500 hover:text-red-700 text-xs shrink-0"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
+          <div className="space-y-1">
+            {schedule.talentCalls.map((tc, index) => (
+              <div key={tc.id}>
+                {talentCallDropTarget === index && talentCallDragIndex !== index && talentCallDragIndex !== index - 1 && (
+                  <div className="h-0.5 bg-blue-500 rounded-full mx-3 my-1" />
+                )}
+                <div
+                  draggable
+                  onDragStart={(e) => {
+                    setTalentCallDragIndex(index);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setTalentCallDropTarget(index);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (talentCallDragIndex !== null && talentCallDragIndex !== index) {
+                      reorderTalentCalls(talentCallDragIndex, index);
+                    }
+                    setTalentCallDragIndex(null);
+                    setTalentCallDropTarget(null);
+                  }}
+                  onDragEnd={() => {
+                    setTalentCallDragIndex(null);
+                    setTalentCallDropTarget(null);
+                  }}
+                  className={`flex items-center gap-2 ${talentCallDragIndex === index ? 'opacity-40' : ''}`}
+                >
+                  <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 shrink-0 px-1">
+                    <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
+                      <circle cx="2" cy="2" r="1.5" />
+                      <circle cx="6" cy="2" r="1.5" />
+                      <circle cx="2" cy="7" r="1.5" />
+                      <circle cx="6" cy="7" r="1.5" />
+                      <circle cx="2" cy="12" r="1.5" />
+                      <circle cx="6" cy="12" r="1.5" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={tc.label}
+                    onChange={(e) => updateTalentCall(tc.id, { label: e.target.value })}
+                    placeholder="Label"
+                    className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+                  />
+                  <input
+                    type="text"
+                    value={tc.time}
+                    onChange={(e) => updateTalentCall(tc.id, { time: e.target.value })}
+                    placeholder="Time"
+                    className="w-28 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 font-semibold"
+                  />
+                  <button
+                    onClick={() => removeTalentCall(tc.id)}
+                    className="text-red-500 hover:text-red-700 text-xs shrink-0"
+                  >
+                    Remove
+                  </button>
+                </div>
+                {talentCallDropTarget === schedule.talentCalls.length - 1 && index === schedule.talentCalls.length - 1 && talentCallDragIndex !== index && (
+                  <div className="h-0.5 bg-blue-500 rounded-full mx-3 my-1" />
+                )}
+              </div>
+            ))}
+          </div>
           <button
             onClick={addTalentCall}
             className="w-full border border-dashed border-gray-300 rounded-lg py-2 text-sm text-blue-600 hover:bg-blue-50 font-semibold"

@@ -9,6 +9,7 @@ export interface Schedule {
 
   // Theme colors
   themeColor: string;
+  quickRefColor: string;
   wrapColor: string;
   taillightsColor: string;
 

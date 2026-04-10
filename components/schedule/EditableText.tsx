@@ -42,11 +42,20 @@ function renderFormattedText(text: string) {
       parts.push(content);
     }
 
+    if (isBullet) {
+      return (
+        <span key={lineIdx} className="block pl-4">
+          {lineIdx > 0 && '\n'}
+          <span className="mr-1">•</span>
+          <span>{parts}</span>
+        </span>
+      );
+    }
+
     return (
       <span key={lineIdx}>
         {lineIdx > 0 && '\n'}
-        {isBullet && <span className="mr-1">•</span>}
-        {isBullet ? <span className="ml-0.5">{parts}</span> : parts}
+        {parts}
       </span>
     );
   });
@@ -117,6 +126,51 @@ export default function EditableText({
       cancel();
     } else if (e.key === 'Enter' && !multiline) {
       save();
+    } else if (e.key === 'Enter' && multiline && !e.shiftKey) {
+      // Bullet continuation: when pressing Enter on a bullet line,
+      // auto-insert a new bullet. If the bullet is empty, end the list.
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      const range = selection.getRangeAt(0);
+      let node: Node | null = range.startContainer;
+      // Walk up to find the immediate child div of the editable container
+      while (node && node.parentNode !== editableRef.current) {
+        node = node.parentNode;
+      }
+
+      if (node) {
+        const text = node.textContent || '';
+        if (text.startsWith('• ')) {
+          e.preventDefault();
+          if (text.trim() === '•') {
+            // Empty bullet — remove bullet and insert plain new line
+            (node as HTMLElement).textContent = '';
+            // Place cursor in the now-empty line
+            const newRange = document.createRange();
+            newRange.setStart(node, 0);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          } else {
+            // Insert a new bullet line after the current one
+            const newDiv = document.createElement('div');
+            newDiv.textContent = '• ';
+            if (node.nextSibling) {
+              editableRef.current!.insertBefore(newDiv, node.nextSibling);
+            } else {
+              editableRef.current!.appendChild(newDiv);
+            }
+            // Move cursor to end of the new bullet prefix
+            const newRange = document.createRange();
+            const textNode = newDiv.firstChild!;
+            newRange.setStart(textNode, textNode.textContent!.length);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          }
+        }
+      }
     }
   };
 

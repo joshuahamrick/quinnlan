@@ -25,6 +25,7 @@ function createDefaultSchedule(): Schedule {
     versionNotes: '',
 
     themeColor: '#1a1a2e',
+    quickRefColor: '',
     wrapColor: '#e2b714',
     taillightsColor: '#cc0000',
 
@@ -133,6 +134,7 @@ interface ScheduleStore {
   addTalentCall: () => void;
   removeTalentCall: (id: string) => void;
   updateTalentCall: (id: string, updates: Partial<Omit<TalentCall, 'id'>>) => void;
+  reorderTalentCalls: (fromIndex: number, toIndex: number) => void;
 
   // Quick ref entries
   addQuickRefEntry: () => void;
@@ -286,6 +288,13 @@ export const useScheduleStore = create<ScheduleStore>()(
             ),
           },
         })),
+      reorderTalentCalls: (fromIndex, toIndex) =>
+        set((state) => {
+          const talentCalls = [...state.schedule.talentCalls];
+          const [moved] = talentCalls.splice(fromIndex, 1);
+          talentCalls.splice(toIndex, 0, moved);
+          return { schedule: { ...state.schedule, talentCalls } };
+        }),
 
       // Quick ref entries
       addQuickRefEntry: () =>
@@ -426,6 +435,7 @@ export const useScheduleStore = create<ScheduleStore>()(
           fontFamily: persisted.schedule?.fontFamily || currentState.schedule.fontFamily,
           logoScale: persisted.schedule?.logoScale ?? currentState.schedule.logoScale,
           hospitalDepartment: persisted.schedule?.hospitalDepartment ?? currentState.schedule.hospitalDepartment,
+          quickRefColor: persisted.schedule?.quickRefColor ?? currentState.schedule.quickRefColor,
         };
         return {
           ...currentState,
