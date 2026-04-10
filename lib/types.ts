@@ -34,6 +34,9 @@ export interface Schedule {
   // Logo display
   logoScale: number;
 
+  // Font
+  fontFamily: string;
+
   // Quick reference times
   productionTime: string;
   generalTime: string;

@@ -98,7 +98,11 @@ export default function ScheduleEditor() {
   };
 
   return (
-    <div className="max-w-[1100px] mx-auto bg-white shadow-sm border-b border-gray-300" id="schedule-content">
+    <div
+      className="max-w-[1100px] mx-auto bg-white shadow-sm border-b border-gray-300"
+      id="schedule-content"
+      style={{ fontFamily: schedule.fontFamily ? `"${schedule.fontFamily}", sans-serif` : undefined }}
+    >
       <HeaderBar />
       <InfoGrid />
       <VersionBar />

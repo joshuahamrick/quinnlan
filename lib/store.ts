@@ -60,6 +60,7 @@ function createDefaultSchedule(): Schedule {
     hospitalPhone: '',
 
     logoScale: 1.0,
+    fontFamily: 'Nunito',
 
     productionTime: '',
     generalTime: '',
