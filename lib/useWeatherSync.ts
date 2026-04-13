@@ -10,10 +10,16 @@ export function useWeatherSync() {
 
   useEffect(() => {
     const { shootingLat, shootingLon, date } = schedule;
-    if (!shootingLat || !shootingLon || !date) return;
 
-    const isoDate = parseScheduleDate(date);
-    if (!isoDate) return;
+    const isoDate = date ? parseScheduleDate(date) : null;
+
+    if (!shootingLat || !shootingLon || !isoDate) {
+      updateField('sunrise', '');
+      updateField('sunset', '');
+      updateField('weather', '');
+      lastKey.current = '';
+      return;
+    }
 
     const key = `${shootingLat},${shootingLon},${isoDate}`;
     if (key === lastKey.current) return;

@@ -10,7 +10,15 @@ export function useHospitalSync() {
 
   useEffect(() => {
     const { shootingLat, shootingLon } = schedule;
-    if (!shootingLat || !shootingLon) return;
+
+    if (!shootingLat || !shootingLon) {
+      updateField('hospitalName', '');
+      updateField('hospitalAddress', '');
+      updateField('hospitalPhone', '');
+      updateField('hospitalDepartment', '');
+      lastKey.current = '';
+      return;
+    }
 
     const key = `${shootingLat},${shootingLon}`;
     if (key === lastKey.current) return;

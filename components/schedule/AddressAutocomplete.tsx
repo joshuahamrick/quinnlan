@@ -161,8 +161,12 @@ export default function AddressAutocomplete({ value, onChange, onCoordinates, pl
         value={query}
         onChange={(e) => {
           isLocalEdit.current = true;
-          setQuery(e.target.value);
-          onChange(e.target.value);
+          const val = e.target.value;
+          setQuery(val);
+          onChange(val);
+          if (!val) {
+            onCoordinates?.(0, 0);
+          }
         }}
         onFocus={() => {
           if (suggestions.length > 0) setShowDropdown(true);
