@@ -83,7 +83,7 @@ export async function fetchWeatherData(
     return {
       sunrise: formatSunTime(sunrise),
       sunset: formatSunTime(sunset),
-      weather: `${description}, High ${Math.round(high)}°F / Low ${Math.round(low)}°F`,
+      weather: `${description}\nHigh ${Math.round(high)}°F / Low ${Math.round(low)}°F`,
     };
   } catch {
     return null;

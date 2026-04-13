@@ -245,7 +245,7 @@ export default function InfoGrid() {
                   <div className="text-gray-400 italic text-[9px]" data-export-hide>Sunrise/Sunset</div>
                 )}
                 {schedule.weather ? (
-                  <div>{schedule.weather}</div>
+                  <div className="whitespace-pre-wrap">{schedule.weather}</div>
                 ) : (
                   <div className="text-gray-400 italic text-[9px]" data-export-hide>Weather</div>
                 )}
