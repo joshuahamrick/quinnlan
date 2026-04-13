@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useScheduleStore } from '@/lib/store';
-import { parseScheduleDate, fetchSunriseSunset, fetchWeather } from '@/lib/weather';
+import { parseScheduleDate, fetchWeatherData } from '@/lib/weather';
 
 export function useWeatherSync() {
   const { schedule, updateField } = useScheduleStore();
@@ -22,17 +22,12 @@ export function useWeatherSync() {
     let cancelled = false;
 
     async function sync() {
-      const [sun, weather] = await Promise.all([
-        fetchSunriseSunset(shootingLat, shootingLon, isoDate!),
-        fetchWeather(shootingLat, shootingLon, isoDate!),
-      ]);
+      const result = await fetchWeatherData(shootingLat, shootingLon, isoDate!);
       if (cancelled) return;
-      if (sun) {
-        updateField('sunrise', sun.sunrise);
-        updateField('sunset', sun.sunset);
-      }
-      if (weather) {
-        updateField('weather', weather);
+      if (result) {
+        updateField('sunrise', result.sunrise);
+        updateField('sunset', result.sunset);
+        updateField('weather', result.weather);
       }
     }
 

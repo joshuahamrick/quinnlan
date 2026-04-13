@@ -221,7 +221,7 @@ export default function InfoGrid() {
               <div className="text-right">
                 <div className="font-extrabold text-[10px] uppercase mb-0.5">Shooting Location</div>
                 {schedule.shootingLocation ? (
-                  <div className="font-semibold">{schedule.shootingLocation}</div>
+                  <div>{schedule.shootingLocation}</div>
                 ) : (
                   <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
                 )}

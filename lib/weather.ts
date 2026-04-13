@@ -49,52 +49,42 @@ export function parseScheduleDate(dateStr: string): string | null {
   return `${year}-${mm}-${dd}`;
 }
 
-function formatSunTime(timeStr: string): string {
-  // Input: "6:45:23 AM" or "7:15:02 PM" from sunrise-sunset.org formatted=1
-  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2}):\d{2}\s*(AM|PM)$/i);
-  if (!match) return timeStr;
-  const hour = parseInt(match[1], 10);
+function formatSunTime(isoTime: string): string {
+  // Input: "2026-04-13T06:28" → "6:28A", "2026-04-13T19:32" → "7:32P"
+  const match = isoTime.match(/T(\d{2}):(\d{2})$/);
+  if (!match) return isoTime;
+  let hour = parseInt(match[1], 10);
   const minute = match[2];
-  const period = match[3].toUpperCase() === 'AM' ? 'A' : 'P';
+  const period = hour >= 12 ? 'P' : 'A';
+  if (hour === 0) hour = 12;
+  else if (hour > 12) hour -= 12;
   return `${hour}:${minute}${period}`;
 }
 
-export async function fetchSunriseSunset(
+export async function fetchWeatherData(
   lat: number,
   lon: number,
   dateStr: string,
-): Promise<{ sunrise: string; sunset: string } | null> {
+): Promise<{ sunrise: string; sunset: string; weather: string } | null> {
   try {
     const res = await fetch(
-      `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${dateStr}`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,weathercode,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`,
     );
     const data = await res.json();
-    if (data.status !== 'OK') return null;
-    return {
-      sunrise: formatSunTime(data.results.sunrise),
-      sunset: formatSunTime(data.results.sunset),
-    };
-  } catch {
-    return null;
-  }
-}
-
-export async function fetchWeather(
-  lat: number,
-  lon: number,
-  dateStr: string,
-): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`,
-    );
-    const data = await res.json();
-    const code = data.daily?.weathercode?.[0];
-    const temp = data.daily?.temperature_2m_max?.[0];
-    if (code == null || temp == null) return null;
+    const daily = data.daily;
+    if (!daily) return null;
+    const sunrise = daily.sunrise?.[0];
+    const sunset = daily.sunset?.[0];
+    const code = daily.weathercode?.[0];
+    const high = daily.temperature_2m_max?.[0];
+    const low = daily.temperature_2m_min?.[0];
+    if (!sunrise || !sunset || code == null || high == null || low == null) return null;
     const description = WEATHER_CODES[code] || 'Unknown';
-    const tempF = Math.round(temp * 9 / 5 + 32);
-    return `${description}, ${tempF}°F`;
+    return {
+      sunrise: formatSunTime(sunrise),
+      sunset: formatSunTime(sunset),
+      weather: `${description}, High ${Math.round(high)}°F / Low ${Math.round(low)}°F`,
+    };
   } catch {
     return null;
   }
