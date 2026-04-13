@@ -2,9 +2,71 @@
 
 import { useState, useEffect, useRef } from 'react';
 
+interface NominatimAddress {
+  house_number?: string;
+  road?: string;
+  neighbourhood?: string;
+  city?: string;
+  town?: string;
+  village?: string;
+  hamlet?: string;
+  county?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  country_code?: string;
+}
+
 interface NominatimResult {
   place_id: number;
   display_name: string;
+  address?: NominatimAddress;
+}
+
+const STATE_ABBREVIATIONS: Record<string, string> = {
+  'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+  'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+  'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+  'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+  'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+  'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+  'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+  'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+  'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+  'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+  'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+  'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+  'Wisconsin': 'WI', 'Wyoming': 'WY', 'District of Columbia': 'DC',
+};
+
+function getStateAbbreviation(state: string): string {
+  return STATE_ABBREVIATIONS[state] || '';
+}
+
+function formatShortAddress(result: NominatimResult): string {
+  const addr = result.address || {};
+  const parts: string[] = [];
+
+  const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
+  if (street) parts.push(street);
+
+  const city = addr.city || addr.town || addr.village || addr.hamlet || '';
+  if (city) parts.push(city);
+
+  const state = addr.state || '';
+  const zip = addr.postcode || '';
+  const stateAbbrev = getStateAbbreviation(state);
+  if (stateAbbrev && zip) {
+    parts.push(`${stateAbbrev} ${zip}`);
+  } else if (stateAbbrev) {
+    parts.push(stateAbbrev);
+  } else if (state && zip) {
+    parts.push(`${state} ${zip}`);
+  } else if (state) {
+    parts.push(state);
+  }
+
+  return parts.join(', ') || result.display_name;
 }
 
 interface AddressAutocompleteProps {
@@ -89,13 +151,14 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
               className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
               onMouseDown={(e) => {
                 e.preventDefault();
-                setQuery(s.display_name);
-                onChange(s.display_name);
+                const formatted = formatShortAddress(s);
+                setQuery(formatted);
+                onChange(formatted);
                 setSuggestions([]);
                 setShowDropdown(false);
               }}
             >
-              {s.display_name}
+              {formatShortAddress(s)}
             </button>
           ))}
         </div>
