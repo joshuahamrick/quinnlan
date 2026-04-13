@@ -5,6 +5,7 @@ import { useScheduleStore } from '@/lib/store';
 import { compressImage } from '@/lib/images';
 import SectionModal from './SectionModal';
 import AddressAutocomplete from './AddressAutocomplete';
+import TimeInput from './TimeInput';
 
 type ModalType = 'contacts' | 'logos' | 'callTimes' | 'talentCalls' | 'director' | 'hospital' | null;
 
@@ -620,12 +621,11 @@ export default function InfoGrid() {
                     <circle cx="6" cy="12" r="1.5" />
                   </svg>
                 </div>
-                <input
-                  type="text"
+                <TimeInput
                   value={ct.time}
-                  onChange={(e) => updateCallTime(ct.id, { time: e.target.value })}
+                  onChange={(v) => updateCallTime(ct.id, { time: v })}
                   placeholder="Time (e.g. 7:30A)"
-                  className="w-28 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 font-semibold"
+                  className="w-28 text-sm font-semibold"
                 />
                 <input
                   type="text"
@@ -711,12 +711,11 @@ export default function InfoGrid() {
                     placeholder="Label"
                     className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
                   />
-                  <input
-                    type="text"
+                  <TimeInput
                     value={tc.time}
-                    onChange={(e) => updateTalentCall(tc.id, { time: e.target.value })}
+                    onChange={(v) => updateTalentCall(tc.id, { time: v })}
                     placeholder="Time"
-                    className="w-28 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 font-semibold"
+                    className="w-28 text-sm font-semibold"
                   />
                   <button
                     onClick={() => removeTalentCall(tc.id)}
@@ -749,12 +748,11 @@ export default function InfoGrid() {
                 placeholder="Label"
                 className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
               />
-              <input
-                type="text"
+              <TimeInput
                 value={bc.time}
-                onChange={(e) => updateBgCall(bc.id, { time: e.target.value })}
+                onChange={(v) => updateBgCall(bc.id, { time: v })}
                 placeholder="Time"
-                className="w-28 border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 font-semibold"
+                className="w-28 text-sm font-semibold"
               />
               <button
                 onClick={() => removeBgCall(bc.id)}
