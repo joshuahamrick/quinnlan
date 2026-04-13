@@ -96,7 +96,7 @@ export default function InfoGrid() {
                   <div className="h-[2px] bg-blue-500 rounded-full -mt-[1px] mb-[1px]" data-export-hide />
                 )}
                 <div
-                  className={`mb-5 last:mb-0 space-y-0.5 leading-relaxed text-left cursor-grab active:cursor-grabbing ${gridContactDragIndex === index ? 'opacity-40' : ''}`}
+                  className={`mb-8 last:mb-0 space-y-1.5 leading-relaxed text-left cursor-default transition-transform duration-150 ${gridContactDragIndex === index ? 'scale-105 shadow-lg bg-blue-50 border border-blue-300 rounded z-10' : ''} ${gridContactDragIndex !== null && gridContactDragIndex !== index ? 'opacity-60' : ''}`}
                   draggable
                   onDragStart={(e) => {
                     contactWasDragging.current = true;
@@ -184,7 +184,7 @@ export default function InfoGrid() {
                   <div className="h-[2px] bg-blue-500 rounded-full -mt-[1px] mb-[1px]" data-export-hide />
                 )}
                 <div
-                  className={`cursor-grab active:cursor-grabbing ${gridCallTimeDragIndex === index ? 'opacity-40' : ''}`}
+                  className={`cursor-default transition-transform duration-150 ${gridCallTimeDragIndex === index ? 'scale-105 shadow-lg bg-blue-50 border border-blue-300 rounded z-10' : ''} ${gridCallTimeDragIndex !== null && gridCallTimeDragIndex !== index ? 'opacity-60' : ''}`}
                   draggable
                   onDragStart={(e) => {
                     callTimeWasDragging.current = true;
