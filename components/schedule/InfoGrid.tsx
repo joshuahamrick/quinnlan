@@ -47,6 +47,8 @@ export default function InfoGrid() {
   const [gridContactDropTarget, setGridContactDropTarget] = useState<number | null>(null);
   const [gridCallTimeDragIndex, setGridCallTimeDragIndex] = useState<number | null>(null);
   const [gridCallTimeDropTarget, setGridCallTimeDropTarget] = useState<number | null>(null);
+  const contactWasDragging = useRef(false);
+  const callTimeWasDragging = useRef(false);
 
   const handleLogoDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -94,13 +96,10 @@ export default function InfoGrid() {
                   <div className="h-[2px] bg-blue-500 rounded-full -mt-[1px] mb-[1px]" data-export-hide />
                 )}
                 <div
-                  className={`mb-5 last:mb-0 space-y-0.5 leading-relaxed flex ${gridContactDragIndex === index ? 'opacity-40' : ''}`}
+                  className={`mb-5 last:mb-0 space-y-0.5 leading-relaxed text-left cursor-grab active:cursor-grabbing ${gridContactDragIndex === index ? 'opacity-40' : ''}`}
                   draggable
                   onDragStart={(e) => {
-                    const target = e.target as HTMLElement;
-                    const rect = target.getBoundingClientRect();
-                    const offsetX = e.clientX - rect.left;
-                    if (offsetX > 16) { e.preventDefault(); return; }
+                    contactWasDragging.current = true;
                     setGridContactDragIndex(index);
                     e.dataTransfer.effectAllowed = 'move';
                   }}
@@ -120,26 +119,13 @@ export default function InfoGrid() {
                   onDragEnd={() => {
                     setGridContactDragIndex(null);
                     setGridContactDropTarget(null);
+                    setTimeout(() => { contactWasDragging.current = false; }, 0);
                   }}
+                  onClick={() => { if (!contactWasDragging.current) setActiveModal('contacts'); }}
                 >
-                  <div
-                    className="w-4 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 hover:opacity-60 transition-opacity"
-                    data-export-hide
-                  >
-                    <svg width="6" height="10" viewBox="0 0 6 10" fill="currentColor" className="text-gray-400">
-                      <circle cx="1.5" cy="1.5" r="1" />
-                      <circle cx="4.5" cy="1.5" r="1" />
-                      <circle cx="1.5" cy="5" r="1" />
-                      <circle cx="4.5" cy="5" r="1" />
-                      <circle cx="1.5" cy="8.5" r="1" />
-                      <circle cx="4.5" cy="8.5" r="1" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 cursor-pointer" onClick={() => setActiveModal('contacts')}>
                     {c.title && <div className="font-semibold text-[10px]">{c.title}</div>}
                     {c.name && <div className="text-[10px]">{c.name}</div>}
                     {c.phone && <div className="text-[10px]">{c.phone}</div>}
-                  </div>
                 </div>
                 {index === schedule.contacts.length - 1 && gridContactDropTarget !== null && gridContactDropTarget >= schedule.contacts.length - 1 && gridContactDragIndex !== null && gridContactDragIndex !== index && (
                   <div className="h-[2px] bg-blue-500 rounded-full mt-[1px]" data-export-hide />
@@ -198,13 +184,10 @@ export default function InfoGrid() {
                   <div className="h-[2px] bg-blue-500 rounded-full -mt-[1px] mb-[1px]" data-export-hide />
                 )}
                 <div
-                  className={`flex ${gridCallTimeDragIndex === index ? 'opacity-40' : ''}`}
+                  className={`cursor-grab active:cursor-grabbing ${gridCallTimeDragIndex === index ? 'opacity-40' : ''}`}
                   draggable
                   onDragStart={(e) => {
-                    const target = e.target as HTMLElement;
-                    const rect = target.getBoundingClientRect();
-                    const offsetX = e.clientX - rect.left;
-                    if (offsetX > 16) { e.preventDefault(); return; }
+                    callTimeWasDragging.current = true;
                     setGridCallTimeDragIndex(index);
                     e.dataTransfer.effectAllowed = 'move';
                   }}
@@ -224,22 +207,10 @@ export default function InfoGrid() {
                   onDragEnd={() => {
                     setGridCallTimeDragIndex(null);
                     setGridCallTimeDropTarget(null);
+                    setTimeout(() => { callTimeWasDragging.current = false; }, 0);
                   }}
+                  onClick={() => { if (!callTimeWasDragging.current) setActiveModal('callTimes'); }}
                 >
-                  <div
-                    className="w-4 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 hover:opacity-60 transition-opacity"
-                    data-export-hide
-                  >
-                    <svg width="6" height="10" viewBox="0 0 6 10" fill="currentColor" className="text-gray-400">
-                      <circle cx="1.5" cy="1.5" r="1" />
-                      <circle cx="4.5" cy="1.5" r="1" />
-                      <circle cx="1.5" cy="5" r="1" />
-                      <circle cx="4.5" cy="5" r="1" />
-                      <circle cx="1.5" cy="8.5" r="1" />
-                      <circle cx="4.5" cy="8.5" r="1" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 cursor-pointer" onClick={() => setActiveModal('callTimes')}>
                     {hasTime && hasLabel ? (
                       <span>
                         <span className="font-semibold">{ct.time}:</span> {ct.label}
@@ -255,7 +226,6 @@ export default function InfoGrid() {
                     ) : (
                       <span className="text-gray-300 italic" data-export-hide>—</span>
                     )}
-                  </div>
                 </div>
                 {index === schedule.callTimes.length - 1 && gridCallTimeDropTarget !== null && gridCallTimeDropTarget >= schedule.callTimes.length - 1 && gridCallTimeDragIndex !== null && gridCallTimeDragIndex !== index && (
                   <div className="h-[2px] bg-blue-500 rounded-full mt-[1px]" data-export-hide />
