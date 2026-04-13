@@ -80,24 +80,24 @@ async function tryFetchPhone(lat: number, lon: number): Promise<string> {
   }
 }
 
-async function fetchOverpass(lat: number, lon: number, radiusMeters: number): Promise<OverpassElement[]> {
+async function fetchOverpass(lat: number, lon: number, radiusMeters: number, signal?: AbortSignal): Promise<OverpassElement[]> {
   const query = buildOverpassQuery(lat, lon, radiusMeters);
   const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
+  const res = await fetch(url, signal ? { signal } : undefined);
   if (!res.ok) return [];
   const data = await res.json();
   return data?.elements ?? [];
 }
 
-export async function fetchNearestER(lat: number, lon: number): Promise<{
+export async function fetchNearestER(lat: number, lon: number, signal?: AbortSignal): Promise<{
   name: string;
   address: string;
   phone: string;
   department: string;
 } | null> {
-  let elements = await fetchOverpass(lat, lon, 15000);
+  let elements = await fetchOverpass(lat, lon, 15000, signal);
   if (elements.length === 0) {
-    elements = await fetchOverpass(lat, lon, 30000);
+    elements = await fetchOverpass(lat, lon, 30000, signal);
   }
   if (elements.length === 0) return null;
 

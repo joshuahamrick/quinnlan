@@ -24,20 +24,54 @@ export function useHospitalSync() {
     if (key === lastKey.current) return;
     lastKey.current = key;
 
+    // If hospital data already exists for this location, skip fetch
+    if (schedule.hospitalName) return;
+
     let cancelled = false;
 
     async function sync() {
-      const result = await fetchNearestER(shootingLat, shootingLon);
-      if (cancelled) return;
-      if (result) {
-        updateField('hospitalName', result.name);
-        updateField('hospitalAddress', result.address);
-        updateField('hospitalPhone', result.phone);
-        updateField('hospitalDepartment', result.department);
+      const lat = shootingLat;
+      const lon = shootingLon;
+
+      // Check localStorage cache first
+      const cacheKey = `hospital-${lat.toFixed(3)}-${lon.toFixed(3)}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          if (!cancelled) {
+            updateField('hospitalName', data.name);
+            updateField('hospitalAddress', data.address);
+            updateField('hospitalPhone', data.phone);
+            updateField('hospitalDepartment', data.department);
+          }
+          return;
+        } catch {
+          // Invalid cache, continue to fetch
+        }
+      }
+
+      // Fetch with 8s timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      try {
+        const result = await fetchNearestER(lat, lon, controller.signal);
+        clearTimeout(timeout);
+        if (cancelled) return;
+        if (result) {
+          localStorage.setItem(cacheKey, JSON.stringify(result));
+          updateField('hospitalName', result.name);
+          updateField('hospitalAddress', result.address);
+          updateField('hospitalPhone', result.phone);
+          updateField('hospitalDepartment', result.department);
+        }
+      } catch {
+        clearTimeout(timeout);
+        // Don't clear existing hospital data on error
       }
     }
 
     sync();
     return () => { cancelled = true; };
-  }, [schedule.shootingLat, schedule.shootingLon, updateField]);
+  }, [schedule.shootingLat, schedule.shootingLon, schedule.hospitalName, updateField]);
 }

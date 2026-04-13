@@ -101,7 +101,7 @@ export default function InfoGrid() {
                 return (
                   <div key={c.id}>
                     <div
-                      className={`mb-8 last:mb-0 space-y-0 leading-relaxed text-left cursor-default transition-opacity duration-200 ${isDragged ? 'opacity-20' : ''}`}
+                      className={`mb-14 last:mb-0 space-y-0 leading-relaxed text-left cursor-default transition-opacity duration-200 ${isDragged ? 'opacity-20' : ''}`}
                       draggable
                       onDragStart={(e) => {
                         contactWasDragging.current = true;

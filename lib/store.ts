@@ -66,7 +66,7 @@ function createDefaultSchedule(): Schedule {
 
     logoScale: 1.0,
     infoGridColumns: [15, 25, 18, 16, 26],
-    hospitalSplitPercent: 70,
+    hospitalSplitPercent: 60,
     fontFamily: 'Nunito',
     fontSize: 12,
 
@@ -455,7 +455,7 @@ export const useScheduleStore = create<ScheduleStore>()(
           shootingLon: persisted.schedule?.shootingLon ?? currentState.schedule.shootingLon,
           infoGridColumns: persisted.schedule?.infoGridColumns || currentState.schedule.infoGridColumns,
           fontSize: persisted.schedule?.fontSize ?? currentState.schedule.fontSize,
-          hospitalSplitPercent: persisted.schedule?.hospitalSplitPercent ?? currentState.schedule.hospitalSplitPercent,
+          hospitalSplitPercent: persisted.schedule?.hospitalSplitPercent ?? 60,
         };
         return {
           ...currentState,
