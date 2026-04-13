@@ -22,6 +22,7 @@ export interface Schedule {
 
   // Director & production info
   director: string;
+  shootingLocation: string;
   sunrise: string;
   sunset: string;
   weather: string;
@@ -35,8 +36,12 @@ export interface Schedule {
   // Logo display
   logoScale: number;
 
+  // Info grid column widths (percentages, must sum to 100)
+  infoGridColumns: number[];
+
   // Font
   fontFamily: string;
+  fontSize: number;
 
   // Quick reference entries
   quickRefEntries: QuickRefEntry[];

@@ -101,7 +101,10 @@ export default function ScheduleEditor() {
     <div
       className="max-w-[1100px] mx-auto bg-white shadow-sm border-b border-gray-300"
       id="schedule-content"
-      style={{ fontFamily: (schedule.fontFamily || 'Nunito') ? `"${schedule.fontFamily || 'Nunito'}", sans-serif` : undefined }}
+      style={{
+        fontFamily: (schedule.fontFamily || 'Nunito') ? `"${schedule.fontFamily || 'Nunito'}", sans-serif` : undefined,
+        fontSize: (schedule.fontSize || 12) + 'px',
+      }}
     >
       <HeaderBar />
       <InfoGrid />

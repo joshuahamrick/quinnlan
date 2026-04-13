@@ -13,7 +13,18 @@ const FONT_OPTIONS = [
   'Open Sans',
   'Montserrat',
   'Lato',
+  'Raleway',
+  'Source Sans 3',
+  'Cabin',
+  'Karla',
+  'Rubik',
+  'DM Sans',
+  'Josefin Sans',
+  'Comfortaa',
+  'Outfit',
 ];
+
+const FONT_SIZE_OPTIONS = [8, 9, 10, 11, 12, 14, 16];
 
 const PRESET_COLORS = [
   '#1a1a2e', '#16213e', '#0f3460', '#533483',
@@ -28,10 +39,12 @@ export default function FormattingToolbar() {
   const { applyFormatting, isActive } = useFormatting();
 
   const [fontOpen, setFontOpen] = useState(false);
+  const [fontSizeOpen, setFontSizeOpen] = useState(false);
   const [activeColorPicker, setActiveColorPicker] = useState<ColorTarget | null>(null);
   const [extractedColors, setExtractedColors] = useState<string[]>([]);
 
   const fontRef = useRef<HTMLDivElement>(null);
+  const fontSizeRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
 
   // Extract colors from logos
@@ -62,6 +75,9 @@ export default function FormattingToolbar() {
     function handleClick(e: MouseEvent) {
       if (fontRef.current && !fontRef.current.contains(e.target as Node)) {
         setFontOpen(false);
+      }
+      if (fontSizeRef.current && !fontSizeRef.current.contains(e.target as Node)) {
+        setFontSizeOpen(false);
       }
       if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
         setActiveColorPicker(null);
@@ -109,6 +125,34 @@ export default function FormattingToolbar() {
                 style={{ fontFamily: font }}
               >
                 {font}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Font size selector */}
+      <div ref={fontSizeRef} className="relative">
+        <button
+          onClick={() => setFontSizeOpen(!fontSizeOpen)}
+          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200 rounded transition-colors min-w-[44px]"
+        >
+          <span>{schedule.fontSize || 12}</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" className="shrink-0 text-gray-400">
+            <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {fontSizeOpen && (
+          <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[60px]">
+            {FONT_SIZE_OPTIONS.map((size) => (
+              <button
+                key={size}
+                onClick={() => { updateField('fontSize', size); setFontSizeOpen(false); }}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors ${
+                  (schedule.fontSize || 12) === size ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                }`}
+              >
+                {size}
               </button>
             ))}
           </div>

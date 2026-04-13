@@ -56,15 +56,19 @@ export default function InfoGrid() {
     reader.readAsDataURL(file);
   }, [schedule.logos, updateField]);
 
+  const gridRef = useRef<HTMLDivElement>(null);
+  const cols = schedule.infoGridColumns ?? [15, 25, 18, 16, 26];
+
   return (
     <>
       {/* Info Grid — 5-column CSS grid matching Canva reference layout */}
       <div
+        ref={gridRef}
         data-schedule-row
-        className="border border-gray-300 text-[10px] leading-tight"
+        className="border border-gray-300 text-[10px] leading-tight relative"
         style={{
           display: 'grid',
-          gridTemplateColumns: '15% 25% 18% 16% 26%',
+          gridTemplateColumns: cols.map((c) => `${c}%`).join(' '),
           gridTemplateRows: 'auto auto',
         }}
       >
@@ -185,36 +189,54 @@ export default function InfoGrid() {
           )}
         </div>
 
-        {/* DIRECTOR + DATE + WEATHER — top portion of col 5 */}
+        {/* DIRECTOR + SHOOTING LOCATION + DAY + DATE/WEATHER — 2x2 grid in col 5 */}
         <div
           className="p-2 border-b border-gray-300 cursor-pointer hover:bg-blue-50/40 transition-colors"
           onClick={() => setActiveModal('director')}
         >
-          <div className="font-extrabold text-[10px] uppercase mb-0.5">Director</div>
-          {schedule.director ? (
-            <div className="font-semibold">{schedule.director}</div>
-          ) : (
-            <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
-          )}
-          <div className="mt-2 space-y-0.5">
-            {schedule.date ? (
-              <div className="font-extrabold uppercase text-[9px]">{schedule.date}</div>
-            ) : (
-              <div className="text-gray-400 italic text-[9px]" data-export-hide>Date</div>
-            )}
-            {schedule.sunrise || schedule.sunset ? (
-              <div>Sunrise: {schedule.sunrise || '—'} | Sunset: {schedule.sunset || '—'}</div>
-            ) : (
-              <div className="text-gray-400 italic text-[9px]" data-export-hide>Sunrise/Sunset</div>
-            )}
-            {schedule.weather ? (
-              <div>{schedule.weather}</div>
-            ) : (
-              <div className="text-gray-400 italic text-[9px]" data-export-hide>Weather</div>
-            )}
-            {(schedule.dayNumber || schedule.totalDays) && (
-              <div className="font-semibold">Day {schedule.dayNumber} of {schedule.totalDays}</div>
-            )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: '0' }}>
+            {/* Top-left: Director */}
+            <div>
+              <div className="font-extrabold text-[10px] uppercase mb-0.5">Director</div>
+              {schedule.director ? (
+                <div className="font-semibold">{schedule.director}</div>
+              ) : (
+                <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
+              )}
+            </div>
+            {/* Top-right: Shooting Location */}
+            <div className="text-right">
+              <div className="font-extrabold text-[10px] uppercase mb-0.5">Shooting Location</div>
+              {schedule.shootingLocation ? (
+                <div className="font-semibold">{schedule.shootingLocation}</div>
+              ) : (
+                <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
+              )}
+            </div>
+            {/* Bottom-left: Day X of Y */}
+            <div className="mt-2 flex items-end">
+              {(schedule.dayNumber || schedule.totalDays) && (
+                <div className="font-semibold">Day {schedule.dayNumber} of {schedule.totalDays}</div>
+              )}
+            </div>
+            {/* Bottom-right: Date, Sunrise/Sunset, Weather */}
+            <div className="mt-2 space-y-0.5 text-right">
+              {schedule.date ? (
+                <div className="font-extrabold uppercase text-[9px]">{schedule.date}</div>
+              ) : (
+                <div className="text-gray-400 italic text-[9px]" data-export-hide>Date</div>
+              )}
+              {schedule.sunrise || schedule.sunset ? (
+                <div>Sunrise: {schedule.sunrise || '—'} | Sunset: {schedule.sunset || '—'}</div>
+              ) : (
+                <div className="text-gray-400 italic text-[9px]" data-export-hide>Sunrise/Sunset</div>
+              )}
+              {schedule.weather ? (
+                <div>{schedule.weather}</div>
+              ) : (
+                <div className="text-gray-400 italic text-[9px]" data-export-hide>Weather</div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -246,6 +268,16 @@ export default function InfoGrid() {
             </div>
           </div>
         </div>
+
+        {/* Column resize handles */}
+        {[0, 1, 2, 3].map((i) => (
+          <ColumnResizeHandle
+            key={i}
+            colIndex={i}
+            columns={cols}
+            gridRef={gridRef}
+          />
+        ))}
       </div>
 
       {/* ---- MODALS ---- */}
@@ -585,6 +617,16 @@ export default function InfoGrid() {
             />
           </div>
           <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Shooting Location</label>
+            <input
+              type="text"
+              value={schedule.shootingLocation}
+              onChange={(e) => updateField('shootingLocation', e.target.value)}
+              placeholder="e.g. Starlight Studios, Stage 4"
+              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            />
+          </div>
+          <div>
             <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Date</label>
             <input
               type="text"
@@ -797,6 +839,97 @@ function LogoResizeHandle({ isDraggingRef }: { isDraggingRef: React.MutableRefOb
         />
       </svg>
     </div>
+  );
+}
+
+/** Invisible drag handle between two info grid columns */
+function ColumnResizeHandle({
+  colIndex,
+  columns,
+  gridRef,
+}: {
+  colIndex: number;
+  columns: number[];
+  gridRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const updateField = useScheduleStore((s) => s.updateField);
+  const updateFieldRef = useRef(updateField);
+  updateFieldRef.current = updateField;
+  const listenersRef = useRef<{ move: (e: MouseEvent) => void; up: () => void } | null>(null);
+  const [hovering, setHovering] = useState(false);
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (listenersRef.current) {
+        window.removeEventListener('mousemove', listenersRef.current.move);
+        window.removeEventListener('mouseup', listenersRef.current.up);
+      }
+    };
+  }, []);
+
+  const leftOffset = columns.slice(0, colIndex + 1).reduce((a, b) => a + b, 0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const gridWidth = gridRef.current?.offsetWidth ?? 1;
+    const startX = e.clientX;
+    const startCols = useScheduleStore.getState().schedule.infoGridColumns ?? [15, 25, 18, 16, 26];
+    setDragging(true);
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const deltaX = ev.clientX - startX;
+      const deltaPct = (deltaX / gridWidth) * 100;
+      const newCols = [...startCols];
+      const MIN = 8;
+      let left = startCols[colIndex] + deltaPct;
+      let right = startCols[colIndex + 1] - deltaPct;
+      if (left < MIN) { right -= (MIN - left); left = MIN; }
+      if (right < MIN) { left -= (MIN - right); right = MIN; }
+      left = Math.max(MIN, left);
+      right = Math.max(MIN, right);
+      newCols[colIndex] = Math.round(left * 100) / 100;
+      newCols[colIndex + 1] = Math.round(right * 100) / 100;
+      updateFieldRef.current('infoGridColumns', newCols);
+    };
+
+    const onMouseUp = () => {
+      setDragging(false);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      listenersRef.current = null;
+    };
+
+    if (listenersRef.current) {
+      window.removeEventListener('mousemove', listenersRef.current.move);
+      window.removeEventListener('mouseup', listenersRef.current.up);
+    }
+    listenersRef.current = { move: onMouseMove, up: onMouseUp };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [colIndex, gridRef]);
+
+  return (
+    <div
+      data-export-hide
+      onMouseDown={handleMouseDown}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      style={{
+        position: 'absolute',
+        left: `${leftOffset}%`,
+        top: 0,
+        bottom: 0,
+        width: 7,
+        transform: 'translateX(-50%)',
+        cursor: 'col-resize',
+        zIndex: 10,
+        background: hovering || dragging ? 'rgba(59, 130, 246, 0.5)' : 'transparent',
+        transition: 'background 0.15s',
+      }}
+    />
   );
 }
 

@@ -52,6 +52,7 @@ function createDefaultSchedule(): Schedule {
     bgCalls: [],
 
     director: '',
+    shootingLocation: '',
     sunrise: '',
     sunset: '',
     weather: '',
@@ -62,7 +63,9 @@ function createDefaultSchedule(): Schedule {
     hospitalPhone: '',
 
     logoScale: 1.0,
+    infoGridColumns: [15, 25, 18, 16, 26],
     fontFamily: 'Nunito',
+    fontSize: 12,
 
     quickRefEntries: [
       { id: crypto.randomUUID(), label: 'Production', time: '' },
@@ -436,6 +439,9 @@ export const useScheduleStore = create<ScheduleStore>()(
           logoScale: persisted.schedule?.logoScale ?? currentState.schedule.logoScale,
           hospitalDepartment: persisted.schedule?.hospitalDepartment ?? currentState.schedule.hospitalDepartment,
           quickRefColor: persisted.schedule?.quickRefColor ?? currentState.schedule.quickRefColor,
+          shootingLocation: persisted.schedule?.shootingLocation ?? currentState.schedule.shootingLocation,
+          infoGridColumns: persisted.schedule?.infoGridColumns || currentState.schedule.infoGridColumns,
+          fontSize: persisted.schedule?.fontSize ?? currentState.schedule.fontSize,
         };
         return {
           ...currentState,
