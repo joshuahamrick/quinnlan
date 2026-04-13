@@ -43,6 +43,10 @@ export default function InfoGrid() {
   const [contactDropTarget, setContactDropTarget] = useState<number | null>(null);
   const [talentCallDragIndex, setTalentCallDragIndex] = useState<number | null>(null);
   const [talentCallDropTarget, setTalentCallDropTarget] = useState<number | null>(null);
+  const [gridContactDragIndex, setGridContactDragIndex] = useState<number | null>(null);
+  const [gridContactDropTarget, setGridContactDropTarget] = useState<number | null>(null);
+  const [gridCallTimeDragIndex, setGridCallTimeDragIndex] = useState<number | null>(null);
+  const [gridCallTimeDropTarget, setGridCallTimeDropTarget] = useState<number | null>(null);
 
   const handleLogoDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -79,21 +83,71 @@ export default function InfoGrid() {
       >
         {/* CONTACTS — full height, centered */}
         <div
-          className="border-r border-gray-300 p-2 flex flex-col cursor-pointer hover:bg-blue-50/40 transition-colors"
+          className="border-r border-gray-300 p-2 flex flex-col hover:bg-blue-50/40 transition-colors"
           style={{ gridRow: '1 / 3' }}
-          onClick={() => setActiveModal('contacts')}
         >
-          <div className="font-extrabold text-[10px] uppercase mb-1">Contacts:</div>
+          <div className="font-extrabold text-[10px] uppercase mb-1 cursor-pointer" onClick={() => setActiveModal('contacts')}>Contacts:</div>
           <div className="flex-1 flex flex-col justify-center text-left">
-            {schedule.contacts.map((c) => (
-              <div key={c.id} className="mb-5 last:mb-0 space-y-0.5 leading-relaxed">
-                {c.title && <div className="font-semibold text-[10px]">{c.title}</div>}
-                {c.name && <div className="text-[10px]">{c.name}</div>}
-                {c.phone && <div className="text-[10px]">{c.phone}</div>}
+            {schedule.contacts.map((c, index) => (
+              <div key={c.id} className="relative">
+                {gridContactDropTarget === index && gridContactDragIndex !== null && gridContactDragIndex !== index && gridContactDragIndex !== index - 1 && (
+                  <div className="h-[2px] bg-blue-500 rounded-full -mt-[1px] mb-[1px]" data-export-hide />
+                )}
+                <div
+                  className={`mb-5 last:mb-0 space-y-0.5 leading-relaxed flex ${gridContactDragIndex === index ? 'opacity-40' : ''}`}
+                  draggable
+                  onDragStart={(e) => {
+                    const target = e.target as HTMLElement;
+                    const rect = target.getBoundingClientRect();
+                    const offsetX = e.clientX - rect.left;
+                    if (offsetX > 16) { e.preventDefault(); return; }
+                    setGridContactDragIndex(index);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setGridContactDropTarget(index);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (gridContactDragIndex !== null && gridContactDragIndex !== index) {
+                      reorderContacts(gridContactDragIndex, index);
+                    }
+                    setGridContactDragIndex(null);
+                    setGridContactDropTarget(null);
+                  }}
+                  onDragEnd={() => {
+                    setGridContactDragIndex(null);
+                    setGridContactDropTarget(null);
+                  }}
+                >
+                  <div
+                    className="w-4 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 hover:opacity-60 transition-opacity"
+                    data-export-hide
+                  >
+                    <svg width="6" height="10" viewBox="0 0 6 10" fill="currentColor" className="text-gray-400">
+                      <circle cx="1.5" cy="1.5" r="1" />
+                      <circle cx="4.5" cy="1.5" r="1" />
+                      <circle cx="1.5" cy="5" r="1" />
+                      <circle cx="4.5" cy="5" r="1" />
+                      <circle cx="1.5" cy="8.5" r="1" />
+                      <circle cx="4.5" cy="8.5" r="1" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 cursor-pointer" onClick={() => setActiveModal('contacts')}>
+                    {c.title && <div className="font-semibold text-[10px]">{c.title}</div>}
+                    {c.name && <div className="text-[10px]">{c.name}</div>}
+                    {c.phone && <div className="text-[10px]">{c.phone}</div>}
+                  </div>
+                </div>
+                {index === schedule.contacts.length - 1 && gridContactDropTarget !== null && gridContactDropTarget >= schedule.contacts.length - 1 && gridContactDragIndex !== null && gridContactDragIndex !== index && (
+                  <div className="h-[2px] bg-blue-500 rounded-full mt-[1px]" data-export-hide />
+                )}
               </div>
             ))}
             {schedule.contacts.length === 0 && (
-              <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add contacts</div>
+              <div className="text-gray-400 italic text-[9px] cursor-pointer" data-export-hide onClick={() => setActiveModal('contacts')}>Click to add contacts</div>
             )}
           </div>
         </div>
@@ -132,35 +186,85 @@ export default function InfoGrid() {
 
         {/* CALL TIMES — full height */}
         <div
-          className="border-r border-gray-300 p-2 flex flex-col justify-evenly cursor-pointer hover:bg-blue-50/40 transition-colors"
+          className="border-r border-gray-300 p-2 flex flex-col justify-evenly hover:bg-blue-50/40 transition-colors"
           style={{ gridRow: '1 / 3' }}
-          onClick={() => setActiveModal('callTimes')}
         >
-          {schedule.callTimes.map((ct) => {
+          {schedule.callTimes.map((ct, index) => {
             const hasTime = ct.time.trim() !== '';
             const hasLabel = ct.label.trim() !== '';
             return (
-              <div key={ct.id}>
-                {hasTime && hasLabel ? (
-                  <span>
-                    <span className="font-semibold">{ct.time}:</span> {ct.label}
-                  </span>
-                ) : hasTime ? (
-                  <span>
-                    <span className="font-semibold">{ct.time}:</span>
-                  </span>
-                ) : hasLabel ? (
-                  <span className="text-gray-300 italic">
-                    {ct.label}
-                  </span>
-                ) : (
-                  <span className="text-gray-300 italic" data-export-hide>—</span>
+              <div key={ct.id} className="relative">
+                {gridCallTimeDragIndex !== null && gridCallTimeDropTarget === index && gridCallTimeDragIndex !== index && gridCallTimeDragIndex !== index - 1 && (
+                  <div className="h-[2px] bg-blue-500 rounded-full -mt-[1px] mb-[1px]" data-export-hide />
+                )}
+                <div
+                  className={`flex ${gridCallTimeDragIndex === index ? 'opacity-40' : ''}`}
+                  draggable
+                  onDragStart={(e) => {
+                    const target = e.target as HTMLElement;
+                    const rect = target.getBoundingClientRect();
+                    const offsetX = e.clientX - rect.left;
+                    if (offsetX > 16) { e.preventDefault(); return; }
+                    setGridCallTimeDragIndex(index);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setGridCallTimeDropTarget(index);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (gridCallTimeDragIndex !== null && gridCallTimeDragIndex !== index) {
+                      reorderCallTimes(gridCallTimeDragIndex, index);
+                    }
+                    setGridCallTimeDragIndex(null);
+                    setGridCallTimeDropTarget(null);
+                  }}
+                  onDragEnd={() => {
+                    setGridCallTimeDragIndex(null);
+                    setGridCallTimeDropTarget(null);
+                  }}
+                >
+                  <div
+                    className="w-4 shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 hover:opacity-60 transition-opacity"
+                    data-export-hide
+                  >
+                    <svg width="6" height="10" viewBox="0 0 6 10" fill="currentColor" className="text-gray-400">
+                      <circle cx="1.5" cy="1.5" r="1" />
+                      <circle cx="4.5" cy="1.5" r="1" />
+                      <circle cx="1.5" cy="5" r="1" />
+                      <circle cx="4.5" cy="5" r="1" />
+                      <circle cx="1.5" cy="8.5" r="1" />
+                      <circle cx="4.5" cy="8.5" r="1" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 cursor-pointer" onClick={() => setActiveModal('callTimes')}>
+                    {hasTime && hasLabel ? (
+                      <span>
+                        <span className="font-semibold">{ct.time}:</span> {ct.label}
+                      </span>
+                    ) : hasTime ? (
+                      <span>
+                        <span className="font-semibold">{ct.time}:</span>
+                      </span>
+                    ) : hasLabel ? (
+                      <span className="text-gray-300 italic">
+                        {ct.label}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300 italic" data-export-hide>—</span>
+                    )}
+                  </div>
+                </div>
+                {index === schedule.callTimes.length - 1 && gridCallTimeDropTarget !== null && gridCallTimeDropTarget >= schedule.callTimes.length - 1 && gridCallTimeDragIndex !== null && gridCallTimeDragIndex !== index && (
+                  <div className="h-[2px] bg-blue-500 rounded-full mt-[1px]" data-export-hide />
                 )}
               </div>
             );
           })}
           {schedule.callTimes.length === 0 && (
-            <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add call times</div>
+            <div className="text-gray-400 italic text-[9px] cursor-pointer" data-export-hide onClick={() => setActiveModal('callTimes')}>Click to add call times</div>
           )}
         </div>
 
