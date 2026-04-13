@@ -7,11 +7,18 @@ import { fetchNearestER } from '@/lib/hospital';
 export function useHospitalSync() {
   const { schedule, updateField } = useScheduleStore();
   const lastKey = useRef('');
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
     const { shootingLat, shootingLon } = schedule;
 
     if (!shootingLat || !shootingLon) {
+      // Skip clearing on first render — Zustand hasn't hydrated yet,
+      // so lat/lon are still default 0s. Clearing now would wipe persisted data.
+      if (isFirstRun.current) {
+        isFirstRun.current = false;
+        return;
+      }
       updateField('hospitalName', '');
       updateField('hospitalAddress', '');
       updateField('hospitalPhone', '');
@@ -19,6 +26,8 @@ export function useHospitalSync() {
       lastKey.current = '';
       return;
     }
+
+    isFirstRun.current = false;
 
     const key = `${shootingLat},${shootingLon}`;
     if (key === lastKey.current) return;

@@ -7,6 +7,7 @@ import { parseScheduleDate, fetchWeatherData } from '@/lib/weather';
 export function useWeatherSync() {
   const { schedule, updateField } = useScheduleStore();
   const lastKey = useRef('');
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
     const { shootingLat, shootingLon, date } = schedule;
@@ -14,12 +15,20 @@ export function useWeatherSync() {
     const isoDate = date ? parseScheduleDate(date) : null;
 
     if (!shootingLat || !shootingLon || !isoDate) {
+      // Skip clearing on first render — Zustand hasn't hydrated yet,
+      // so lat/lon are still default 0s. Clearing now would wipe persisted data.
+      if (isFirstRun.current) {
+        isFirstRun.current = false;
+        return;
+      }
       updateField('sunrise', '');
       updateField('sunset', '');
       updateField('weather', '');
       lastKey.current = '';
       return;
     }
+
+    isFirstRun.current = false;
 
     const key = `${shootingLat},${shootingLon},${isoDate}`;
     if (key === lastKey.current) return;
