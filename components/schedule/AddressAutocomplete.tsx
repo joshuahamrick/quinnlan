@@ -15,12 +15,19 @@ interface NominatimAddress {
   postcode?: string;
   country?: string;
   country_code?: string;
+  amenity?: string;
+  building?: string;
+  shop?: string;
+  tourism?: string;
+  leisure?: string;
+  office?: string;
 }
 
 interface NominatimResult {
   place_id: number;
   lat: string;
   lon: string;
+  name?: string;
   display_name: string;
   address?: NominatimAddress;
 }
@@ -45,9 +52,27 @@ function getStateAbbreviation(state: string): string {
   return STATE_ABBREVIATIONS[state] || '';
 }
 
+function getEstablishmentName(result: NominatimResult): string {
+  const addr = result.address || {};
+  const road = addr.road || '';
+  const houseNumber = addr.house_number || '';
+
+  const name = result.name ||
+    addr.amenity || addr.building || addr.shop ||
+    addr.tourism || addr.leisure || addr.office || '';
+
+  if (!name) return '';
+  if (name === road || name === houseNumber || name === `${houseNumber} ${road}`) return '';
+
+  return name;
+}
+
 function formatShortAddress(result: NominatimResult): string {
   const addr = result.address || {};
   const parts: string[] = [];
+
+  const establishmentName = getEstablishmentName(result);
+  if (establishmentName) parts.push(establishmentName);
 
   const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
   if (street) parts.push(street);
