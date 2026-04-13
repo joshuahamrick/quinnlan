@@ -124,6 +124,7 @@ interface ScheduleStore {
   addContact: () => void;
   removeContact: (id: string) => void;
   updateContact: (id: string, updates: Partial<Omit<Contact, 'id'>>) => void;
+  reorderContacts: (fromIndex: number, toIndex: number) => void;
 
   // Logos
   addLogo: () => void;
@@ -205,6 +206,13 @@ export const useScheduleStore = create<ScheduleStore>()(
             ),
           },
         })),
+      reorderContacts: (fromIndex, toIndex) =>
+        set((state) => {
+          const contacts = [...state.schedule.contacts];
+          const [moved] = contacts.splice(fromIndex, 1);
+          contacts.splice(toIndex, 0, moved);
+          return { schedule: { ...state.schedule, contacts } };
+        }),
 
       // Logos
       addLogo: () =>

@@ -15,6 +15,7 @@ export default function InfoGrid() {
     addContact,
     removeContact,
     updateContact,
+    reorderContacts,
     addLogo,
     removeLogo,
     reorderLogos,
@@ -38,6 +39,8 @@ export default function InfoGrid() {
   const [logoDropZoneActive, setLogoDropZoneActive] = useState(false);
   const [callTimeDragIndex, setCallTimeDragIndex] = useState<number | null>(null);
   const [callTimeDropTarget, setCallTimeDropTarget] = useState<number | null>(null);
+  const [contactDragIndex, setContactDragIndex] = useState<number | null>(null);
+  const [contactDropTarget, setContactDropTarget] = useState<number | null>(null);
   const [talentCallDragIndex, setTalentCallDragIndex] = useState<number | null>(null);
   const [talentCallDropTarget, setTalentCallDropTarget] = useState<number | null>(null);
 
@@ -305,41 +308,85 @@ export default function InfoGrid() {
         onClose={() => setActiveModal(null)}
         title="Contacts"
       >
-        <div className="space-y-4">
-          {schedule.contacts.map((c) => (
-            <div key={c.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-gray-500 uppercase">Title</label>
-                <button
-                  onClick={() => removeContact(c.id)}
-                  className="text-xs text-red-500 hover:text-red-700"
-                >
-                  Remove
-                </button>
+        <div className="space-y-1">
+          {schedule.contacts.map((c, index) => (
+            <div key={c.id}>
+              {contactDropTarget === index && contactDragIndex !== index && contactDragIndex !== index - 1 && (
+                <div className="h-0.5 bg-blue-500 rounded-full mx-3 my-1" />
+              )}
+              <div
+                draggable
+                onDragStart={(e) => {
+                  setContactDragIndex(index);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setContactDropTarget(index);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (contactDragIndex !== null && contactDragIndex !== index) {
+                    reorderContacts(contactDragIndex, index);
+                  }
+                  setContactDragIndex(null);
+                  setContactDropTarget(null);
+                }}
+                onDragEnd={() => {
+                  setContactDragIndex(null);
+                  setContactDropTarget(null);
+                }}
+                className={`border border-gray-200 rounded-lg p-3 space-y-2 ${contactDragIndex === index ? 'opacity-40' : ''}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 shrink-0">
+                      <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
+                        <circle cx="2" cy="2" r="1.5" />
+                        <circle cx="6" cy="2" r="1.5" />
+                        <circle cx="2" cy="7" r="1.5" />
+                        <circle cx="6" cy="7" r="1.5" />
+                        <circle cx="2" cy="12" r="1.5" />
+                        <circle cx="6" cy="12" r="1.5" />
+                      </svg>
+                    </div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Title</label>
+                  </div>
+                  <button
+                    onClick={() => removeContact(c.id)}
+                    className="text-xs text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={c.title}
+                  onChange={(e) => updateContact(c.id, { title: e.target.value })}
+                  placeholder="e.g. Producer"
+                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+                />
+                <label className="text-xs font-semibold text-gray-500 uppercase block">Name</label>
+                <input
+                  type="text"
+                  value={c.name}
+                  onChange={(e) => updateContact(c.id, { name: e.target.value })}
+                  placeholder="Name"
+                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+                />
+                <label className="text-xs font-semibold text-gray-500 uppercase block">Phone</label>
+                <input
+                  type="text"
+                  value={c.phone}
+                  onChange={(e) => updateContact(c.id, { phone: e.target.value })}
+                  placeholder="Phone"
+                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+                />
               </div>
-              <input
-                type="text"
-                value={c.title}
-                onChange={(e) => updateContact(c.id, { title: e.target.value })}
-                placeholder="e.g. Producer"
-                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
-              />
-              <label className="text-xs font-semibold text-gray-500 uppercase block">Name</label>
-              <input
-                type="text"
-                value={c.name}
-                onChange={(e) => updateContact(c.id, { name: e.target.value })}
-                placeholder="Name"
-                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
-              />
-              <label className="text-xs font-semibold text-gray-500 uppercase block">Phone</label>
-              <input
-                type="text"
-                value={c.phone}
-                onChange={(e) => updateContact(c.id, { phone: e.target.value })}
-                placeholder="Phone"
-                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
-              />
+              {contactDropTarget === schedule.contacts.length - 1 && index === schedule.contacts.length - 1 && contactDragIndex !== index && (
+                <div className="h-0.5 bg-blue-500 rounded-full mx-3 my-1" />
+              )}
             </div>
           ))}
           <button
