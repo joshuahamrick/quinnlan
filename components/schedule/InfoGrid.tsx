@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import { compressImage } from '@/lib/images';
 import SectionModal from './SectionModal';
+import AddressAutocomplete from './AddressAutocomplete';
 
 type ModalType = 'contacts' | 'logos' | 'callTimes' | 'talentCalls' | 'director' | 'hospital' | null;
 
@@ -58,6 +59,7 @@ export default function InfoGrid() {
 
   const gridRef = useRef<HTMLDivElement>(null);
   const cols = schedule.infoGridColumns ?? [15, 25, 18, 16, 26];
+  const rightColSplit = [cols[3], cols[4]];
 
   return (
     <>
@@ -159,114 +161,129 @@ export default function InfoGrid() {
           )}
         </div>
 
-        {/* TALENT CALLS + BG CALLS — top portion of col 4 */}
+        {/* RIGHT COLUMNS (4-5) — nested grid with draggable hospital split */}
         <div
-          className="border-r border-gray-300 border-b border-gray-300 p-2 cursor-pointer hover:bg-blue-50/40 transition-colors"
-          onClick={() => setActiveModal('talentCalls')}
+          className="relative"
+          style={{
+            gridColumn: '4 / 6',
+            gridRow: '1 / 3',
+            display: 'grid',
+            gridTemplateColumns: `${rightColSplit[0]}fr ${rightColSplit[1]}fr`,
+            gridTemplateRows: `${schedule.hospitalSplitPercent ?? 70}% ${100 - (schedule.hospitalSplitPercent ?? 70)}%`,
+          }}
         >
-          <div className="font-extrabold text-[10px] uppercase mb-1">Talent Calls:</div>
-          {schedule.talentCalls.map((tc) => (
-            <div key={tc.id} className="mb-0.5">
-              {tc.label && tc.time ? (
-                <span>{tc.label}: {tc.time}</span>
-              ) : null}
-            </div>
-          ))}
-          {schedule.bgCalls.length > 0 && (
-            <>
-              <div className="font-extrabold text-[10px] uppercase mt-1.5 mb-0.5">BG Calls:</div>
-              {schedule.bgCalls.map((bc) => (
-                <div key={bc.id} className="mb-0.5">
-                  {bc.label && bc.time ? (
-                    <span>{bc.label}: {bc.time}</span>
-                  ) : null}
-                </div>
-              ))}
-            </>
-          )}
-          {schedule.talentCalls.length === 0 && schedule.bgCalls.length === 0 && (
-            <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add</div>
-          )}
-        </div>
+          {/* TALENT CALLS + BG CALLS — top-left of right section */}
+          <div
+            className="border-r border-gray-300 border-b border-gray-300 p-2 cursor-pointer hover:bg-blue-50/40 transition-colors overflow-hidden"
+            onClick={() => setActiveModal('talentCalls')}
+          >
+            <div className="font-extrabold text-[10px] uppercase mb-1">Talent Calls:</div>
+            {schedule.talentCalls.map((tc) => (
+              <div key={tc.id} className="mb-0.5">
+                {tc.label && tc.time ? (
+                  <span>{tc.label}: {tc.time}</span>
+                ) : null}
+              </div>
+            ))}
+            {schedule.bgCalls.length > 0 && (
+              <>
+                <div className="font-extrabold text-[10px] uppercase mt-1.5 mb-0.5">BG Calls:</div>
+                {schedule.bgCalls.map((bc) => (
+                  <div key={bc.id} className="mb-0.5">
+                    {bc.label && bc.time ? (
+                      <span>{bc.label}: {bc.time}</span>
+                    ) : null}
+                  </div>
+                ))}
+              </>
+            )}
+            {schedule.talentCalls.length === 0 && schedule.bgCalls.length === 0 && (
+              <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add</div>
+            )}
+          </div>
 
-        {/* DIRECTOR + SHOOTING LOCATION + DAY + DATE/WEATHER — 2x2 grid in col 5 */}
-        <div
-          className="p-2 border-b border-gray-300 cursor-pointer hover:bg-blue-50/40 transition-colors"
-          onClick={() => setActiveModal('director')}
-        >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: '0' }}>
-            {/* Top-left: Director */}
-            <div>
-              <div className="font-extrabold text-[10px] uppercase mb-0.5">Director</div>
-              {schedule.director ? (
-                <div className="font-semibold">{schedule.director}</div>
-              ) : (
-                <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
-              )}
-            </div>
-            {/* Top-right: Shooting Location */}
-            <div className="text-right">
-              <div className="font-extrabold text-[10px] uppercase mb-0.5">Shooting Location</div>
-              {schedule.shootingLocation ? (
-                <div className="font-semibold">{schedule.shootingLocation}</div>
-              ) : (
-                <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
-              )}
-            </div>
-            {/* Bottom-left: Day X of Y */}
-            <div className="mt-2 flex items-end">
-              {(schedule.dayNumber || schedule.totalDays) && (
-                <div className="font-semibold">Day {schedule.dayNumber} of {schedule.totalDays}</div>
-              )}
-            </div>
-            {/* Bottom-right: Date, Sunrise/Sunset, Weather */}
-            <div className="mt-2 space-y-0.5 text-right">
-              {schedule.date ? (
-                <div className="font-extrabold uppercase text-[9px]">{schedule.date}</div>
-              ) : (
-                <div className="text-gray-400 italic text-[9px]" data-export-hide>Date</div>
-              )}
-              {schedule.sunrise || schedule.sunset ? (
-                <div>Sunrise: {schedule.sunrise || '—'} | Sunset: {schedule.sunset || '—'}</div>
-              ) : (
-                <div className="text-gray-400 italic text-[9px]" data-export-hide>Sunrise/Sunset</div>
-              )}
-              {schedule.weather ? (
-                <div>{schedule.weather}</div>
-              ) : (
-                <div className="text-gray-400 italic text-[9px]" data-export-hide>Weather</div>
-              )}
+          {/* DIRECTOR + SHOOTING LOCATION + DAY + DATE/WEATHER — top-right of right section */}
+          <div
+            className="p-2 border-b border-gray-300 cursor-pointer hover:bg-blue-50/40 transition-colors overflow-hidden"
+            onClick={() => setActiveModal('director')}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: '0' }}>
+              {/* Top-left: Director */}
+              <div>
+                <div className="font-extrabold text-[10px] uppercase mb-0.5">Director</div>
+                {schedule.director ? (
+                  <div className="font-semibold">{schedule.director}</div>
+                ) : (
+                  <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
+                )}
+              </div>
+              {/* Top-right: Shooting Location */}
+              <div className="text-right">
+                <div className="font-extrabold text-[10px] uppercase mb-0.5">Shooting Location</div>
+                {schedule.shootingLocation ? (
+                  <div className="font-semibold">{schedule.shootingLocation}</div>
+                ) : (
+                  <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to set</div>
+                )}
+              </div>
+              {/* Bottom-left: Day X of Y */}
+              <div className="mt-2 flex items-end">
+                {(schedule.dayNumber || schedule.totalDays) && (
+                  <div className="font-semibold">Day {schedule.dayNumber} of {schedule.totalDays}</div>
+                )}
+              </div>
+              {/* Bottom-right: Date, Sunrise/Sunset, Weather */}
+              <div className="mt-2 space-y-0.5 text-right">
+                {schedule.date ? (
+                  <div className="font-extrabold uppercase text-[9px]">{schedule.date}</div>
+                ) : (
+                  <div className="text-gray-400 italic text-[9px]" data-export-hide>Date</div>
+                )}
+                {schedule.sunrise || schedule.sunset ? (
+                  <div>Sunrise: {schedule.sunrise || '—'} | Sunset: {schedule.sunset || '—'}</div>
+                ) : (
+                  <div className="text-gray-400 italic text-[9px]" data-export-hide>Sunrise/Sunset</div>
+                )}
+                {schedule.weather ? (
+                  <div>{schedule.weather}</div>
+                ) : (
+                  <div className="text-gray-400 italic text-[9px]" data-export-hide>Weather</div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* HOSPITAL — spans bottom of columns 4 and 5 */}
-        <div
-          className="p-2 border-t border-gray-300 cursor-pointer hover:bg-blue-50/40 transition-colors"
-          style={{ gridColumn: '4 / 6' }}
-          onClick={() => setActiveModal('hospital')}
-        >
-          <div className="flex items-start gap-3">
-            <HospitalIcon />
-            <div className="flex-1 min-w-0">
-              {schedule.hospitalName ? (
-                <div>
-                  <div className="font-extrabold text-[10px] uppercase mb-0.5">Hospital:</div>
-                  <div className="font-bold text-[10px]">{schedule.hospitalName}</div>
-                  {schedule.hospitalDepartment && (
-                    <div className="text-[9px]">{schedule.hospitalDepartment}</div>
-                  )}
-                  {schedule.hospitalAddress && <div className="text-[9px]">{schedule.hospitalAddress}</div>}
-                  {schedule.hospitalPhone && <div className="text-[9px]">{schedule.hospitalPhone}</div>}
-                </div>
-              ) : (
-                <div>
-                  <div className="font-extrabold text-[10px] uppercase mb-0.5">Hospital:</div>
-                  <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add hospital</div>
-                </div>
-              )}
+          {/* HOSPITAL — spans bottom of both right columns */}
+          <div
+            className="p-2 cursor-pointer hover:bg-blue-50/40 transition-colors overflow-hidden"
+            style={{ gridColumn: '1 / 3' }}
+            onClick={() => setActiveModal('hospital')}
+          >
+            <div className="flex items-start gap-3">
+              <HospitalIcon />
+              <div className="flex-1 min-w-0">
+                {schedule.hospitalName ? (
+                  <div>
+                    <div className="font-extrabold text-[10px] uppercase mb-0.5">Hospital:</div>
+                    <div className="font-bold text-[10px]">{schedule.hospitalName}</div>
+                    {schedule.hospitalDepartment && (
+                      <div className="text-[9px]">{schedule.hospitalDepartment}</div>
+                    )}
+                    {schedule.hospitalAddress && <div className="text-[9px]">{schedule.hospitalAddress}</div>}
+                    {schedule.hospitalPhone && <div className="text-[9px]">{schedule.hospitalPhone}</div>}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="font-extrabold text-[10px] uppercase mb-0.5">Hospital:</div>
+                    <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add hospital</div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* Hospital split drag handle */}
+          <HospitalSplitHandle />
         </div>
 
         {/* Column resize handles */}
@@ -618,10 +635,9 @@ export default function InfoGrid() {
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Shooting Location</label>
-            <input
-              type="text"
+            <AddressAutocomplete
               value={schedule.shootingLocation}
-              onChange={(e) => updateField('shootingLocation', e.target.value)}
+              onChange={(val) => updateField('shootingLocation', val)}
               placeholder="e.g. Starlight Studios, Stage 4"
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
             />
@@ -925,6 +941,82 @@ function ColumnResizeHandle({
         width: 7,
         transform: 'translateX(-50%)',
         cursor: 'col-resize',
+        zIndex: 10,
+        background: hovering || dragging ? 'rgba(59, 130, 246, 0.5)' : 'transparent',
+        transition: 'background 0.15s',
+      }}
+    />
+  );
+}
+
+/** Draggable horizontal handle between talent/director and hospital sections */
+function HospitalSplitHandle() {
+  const updateField = useScheduleStore((s) => s.updateField);
+  const updateFieldRef = useRef(updateField);
+  updateFieldRef.current = updateField;
+  const listenersRef = useRef<{ move: (e: MouseEvent) => void; up: () => void } | null>(null);
+  const [hovering, setHovering] = useState(false);
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (listenersRef.current) {
+        window.removeEventListener('mousemove', listenersRef.current.move);
+        window.removeEventListener('mouseup', listenersRef.current.up);
+      }
+    };
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const container = (e.currentTarget as HTMLElement).parentElement;
+    if (!container) return;
+    const containerHeight = container.offsetHeight;
+    const startY = e.clientY;
+    const startPercent = useScheduleStore.getState().schedule.hospitalSplitPercent ?? 70;
+    setDragging(true);
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const deltaY = ev.clientY - startY;
+      const deltaPct = (deltaY / containerHeight) * 100;
+      const newPercent = Math.min(85, Math.max(30, startPercent + deltaPct));
+      updateFieldRef.current('hospitalSplitPercent', Math.round(newPercent * 100) / 100);
+    };
+
+    const onMouseUp = () => {
+      setDragging(false);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      listenersRef.current = null;
+    };
+
+    if (listenersRef.current) {
+      window.removeEventListener('mousemove', listenersRef.current.move);
+      window.removeEventListener('mouseup', listenersRef.current.up);
+    }
+    listenersRef.current = { move: onMouseMove, up: onMouseUp };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, []);
+
+  const splitPercent = useScheduleStore((s) => s.schedule.hospitalSplitPercent ?? 70);
+
+  return (
+    <div
+      data-export-hide
+      onMouseDown={handleMouseDown}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: `${splitPercent}%`,
+        height: 7,
+        transform: 'translateY(-50%)',
+        cursor: 'row-resize',
         zIndex: 10,
         background: hovering || dragging ? 'rgba(59, 130, 246, 0.5)' : 'transparent',
         transition: 'background 0.15s',

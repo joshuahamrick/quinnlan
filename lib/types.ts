@@ -39,6 +39,9 @@ export interface Schedule {
   // Info grid column widths (percentages, must sum to 100)
   infoGridColumns: number[];
 
+  // Hospital split (percentage for talent/director vs hospital in right columns)
+  hospitalSplitPercent: number;
+
   // Font
   fontFamily: string;
   fontSize: number;
