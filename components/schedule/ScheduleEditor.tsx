@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import type { SceneRow as SceneRowType, ActionBarRow, ActionBarType } from '@/lib/types';
 import { useWeatherSync } from '@/lib/useWeatherSync';
+import { useHospitalSync } from '@/lib/useHospitalSync';
 import HeaderBar from './HeaderBar';
 import InfoGrid from './InfoGrid';
 import VersionBar from './VersionBar';
@@ -16,6 +17,7 @@ import ActionBar from './ActionBar';
 
 export default function ScheduleEditor() {
   useWeatherSync();
+  useHospitalSync();
   const { schedule, insertRowAfter, addRow, reorderRows } = useScheduleStore();
   const [insertMenuId, setInsertMenuId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
