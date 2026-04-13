@@ -91,7 +91,7 @@ export default function InfoGrid() {
           style={{ gridRow: '1 / 3' }}
         >
           <div className="font-extrabold text-[10px] uppercase mb-1 cursor-pointer" onClick={() => setActiveModal('contacts')}>Contacts:</div>
-          <div className="flex-1 flex flex-col justify-center text-left gap-10">
+          <div className="flex-1 flex flex-col justify-center text-left gap-5">
             {(() => {
               const displayContacts = contactPreviewOrder
                 ? contactPreviewOrder.map(id => schedule.contacts.find(c => c.id === id)!).filter(Boolean)
