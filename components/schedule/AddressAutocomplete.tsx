@@ -19,6 +19,8 @@ interface NominatimAddress {
 
 interface NominatimResult {
   place_id: number;
+  lat: string;
+  lon: string;
   display_name: string;
   address?: NominatimAddress;
 }
@@ -72,11 +74,12 @@ function formatShortAddress(result: NominatimResult): string {
 interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  onCoordinates?: (lat: number, lon: number) => void;
   placeholder?: string;
   className?: string;
 }
 
-export default function AddressAutocomplete({ value, onChange, placeholder, className }: AddressAutocompleteProps) {
+export default function AddressAutocomplete({ value, onChange, onCoordinates, placeholder, className }: AddressAutocompleteProps) {
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -154,6 +157,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
                 const formatted = formatShortAddress(s);
                 setQuery(formatted);
                 onChange(formatted);
+                onCoordinates?.(parseFloat(s.lat), parseFloat(s.lon));
                 setSuggestions([]);
                 setShowDropdown(false);
               }}

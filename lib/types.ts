@@ -23,6 +23,8 @@ export interface Schedule {
   // Director & production info
   director: string;
   shootingLocation: string;
+  shootingLat: number;
+  shootingLon: number;
   sunrise: string;
   sunset: string;
   weather: string;

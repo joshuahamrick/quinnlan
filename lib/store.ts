@@ -53,6 +53,8 @@ function createDefaultSchedule(): Schedule {
 
     director: '',
     shootingLocation: '',
+    shootingLat: 0,
+    shootingLon: 0,
     sunrise: '',
     sunset: '',
     weather: '',
@@ -441,6 +443,8 @@ export const useScheduleStore = create<ScheduleStore>()(
           hospitalDepartment: persisted.schedule?.hospitalDepartment ?? currentState.schedule.hospitalDepartment,
           quickRefColor: persisted.schedule?.quickRefColor ?? currentState.schedule.quickRefColor,
           shootingLocation: persisted.schedule?.shootingLocation ?? currentState.schedule.shootingLocation,
+          shootingLat: persisted.schedule?.shootingLat ?? currentState.schedule.shootingLat,
+          shootingLon: persisted.schedule?.shootingLon ?? currentState.schedule.shootingLon,
           infoGridColumns: persisted.schedule?.infoGridColumns || currentState.schedule.infoGridColumns,
           fontSize: persisted.schedule?.fontSize ?? currentState.schedule.fontSize,
           hospitalSplitPercent: persisted.schedule?.hospitalSplitPercent ?? currentState.schedule.hospitalSplitPercent,

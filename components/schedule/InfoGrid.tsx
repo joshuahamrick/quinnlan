@@ -638,6 +638,10 @@ export default function InfoGrid() {
             <AddressAutocomplete
               value={schedule.shootingLocation}
               onChange={(val) => updateField('shootingLocation', val)}
+              onCoordinates={(lat, lon) => {
+                updateField('shootingLat', lat);
+                updateField('shootingLon', lon);
+              }}
               placeholder="e.g. Starlight Studios, Stage 4"
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
             />
