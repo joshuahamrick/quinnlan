@@ -49,6 +49,8 @@ export default function InfoGrid() {
   const [gridCallTimeDropTarget, setGridCallTimeDropTarget] = useState<number | null>(null);
   const contactWasDragging = useRef(false);
   const callTimeWasDragging = useRef(false);
+  const [contactPreviewOrder, setContactPreviewOrder] = useState<string[] | null>(null);
+  const [callTimePreviewOrder, setCallTimePreviewOrder] = useState<string[] | null>(null);
 
   const handleLogoDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -90,48 +92,66 @@ export default function InfoGrid() {
         >
           <div className="font-extrabold text-[10px] uppercase mb-1 cursor-pointer" onClick={() => setActiveModal('contacts')}>Contacts:</div>
           <div className="flex-1 flex flex-col justify-center text-left">
-            {schedule.contacts.map((c, index) => (
-              <div key={c.id} className="relative">
-                {gridContactDropTarget === index && gridContactDragIndex !== null && gridContactDragIndex !== index && gridContactDragIndex !== index - 1 && (
-                  <div className="h-[2px] bg-blue-500 rounded-full -mt-[1px] mb-[1px]" data-export-hide />
-                )}
-                <div
-                  className={`mb-8 last:mb-0 space-y-1.5 leading-relaxed text-left cursor-default transition-transform duration-150 ${gridContactDragIndex === index ? 'scale-105 shadow-lg bg-blue-50 border border-blue-300 rounded z-10' : ''} ${gridContactDragIndex !== null && gridContactDragIndex !== index ? 'opacity-60' : ''}`}
-                  draggable
-                  onDragStart={(e) => {
-                    contactWasDragging.current = true;
-                    setGridContactDragIndex(index);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    setGridContactDropTarget(index);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (gridContactDragIndex !== null && gridContactDragIndex !== index) {
-                      reorderContacts(gridContactDragIndex, index);
-                    }
-                    setGridContactDragIndex(null);
-                    setGridContactDropTarget(null);
-                  }}
-                  onDragEnd={() => {
-                    setGridContactDragIndex(null);
-                    setGridContactDropTarget(null);
-                    setTimeout(() => { contactWasDragging.current = false; }, 0);
-                  }}
-                  onClick={() => { if (!contactWasDragging.current) setActiveModal('contacts'); }}
-                >
-                    {c.title && <div className="font-semibold text-[10px]">{c.title}</div>}
-                    {c.name && <div className="text-[10px]">{c.name}</div>}
-                    {c.phone && <div className="text-[10px]">{c.phone}</div>}
-                </div>
-                {index === schedule.contacts.length - 1 && gridContactDropTarget !== null && gridContactDropTarget >= schedule.contacts.length - 1 && gridContactDragIndex !== null && gridContactDragIndex !== index && (
-                  <div className="h-[2px] bg-blue-500 rounded-full mt-[1px]" data-export-hide />
-                )}
-              </div>
-            ))}
+            {(() => {
+              const displayContacts = contactPreviewOrder
+                ? contactPreviewOrder.map(id => schedule.contacts.find(c => c.id === id)!).filter(Boolean)
+                : schedule.contacts;
+              return displayContacts.map((c, index) => {
+                const isDragged = gridContactDragIndex !== null && c.id === schedule.contacts[gridContactDragIndex]?.id;
+                return (
+                  <div key={c.id}>
+                    <div
+                      className={`mb-8 last:mb-0 space-y-0 leading-relaxed text-left cursor-default transition-opacity duration-200 ${isDragged ? 'opacity-20' : ''}`}
+                      draggable
+                      onDragStart={(e) => {
+                        contactWasDragging.current = true;
+                        const origIndex = schedule.contacts.findIndex(sc => sc.id === c.id);
+                        setGridContactDragIndex(origIndex);
+                        setContactPreviewOrder(schedule.contacts.map(sc => sc.id));
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        if (gridContactDragIndex !== null) {
+                          const dragId = schedule.contacts[gridContactDragIndex].id;
+                          setContactPreviewOrder(prev => {
+                            if (!prev) return prev;
+                            const currentPos = prev.indexOf(dragId);
+                            if (currentPos === index) return prev;
+                            const next = prev.filter(id => id !== dragId);
+                            next.splice(index, 0, dragId);
+                            return next;
+                          });
+                        }
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (gridContactDragIndex !== null && contactPreviewOrder) {
+                          const dragId = schedule.contacts[gridContactDragIndex].id;
+                          const toIndex = contactPreviewOrder.indexOf(dragId);
+                          if (gridContactDragIndex !== toIndex) {
+                            reorderContacts(gridContactDragIndex, toIndex);
+                          }
+                        }
+                        setGridContactDragIndex(null);
+                        setContactPreviewOrder(null);
+                      }}
+                      onDragEnd={() => {
+                        setGridContactDragIndex(null);
+                        setContactPreviewOrder(null);
+                        setTimeout(() => { contactWasDragging.current = false; }, 0);
+                      }}
+                      onClick={() => { if (!contactWasDragging.current) setActiveModal('contacts'); }}
+                    >
+                        {c.title && <div className="font-semibold text-[10px]">{c.title}</div>}
+                        {c.name && <div className="text-[10px]">{c.name}</div>}
+                        {c.phone && <div className="text-[10px]">{c.phone}</div>}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
             {schedule.contacts.length === 0 && (
               <div className="text-gray-400 italic text-[9px] cursor-pointer" data-export-hide onClick={() => setActiveModal('contacts')}>Click to add contacts</div>
             )}
@@ -175,64 +195,80 @@ export default function InfoGrid() {
           className="border-r border-gray-300 p-2 flex flex-col justify-evenly hover:bg-blue-50/40 transition-colors"
           style={{ gridRow: '1 / 3' }}
         >
-          {schedule.callTimes.map((ct, index) => {
-            const hasTime = ct.time.trim() !== '';
-            const hasLabel = ct.label.trim() !== '';
-            return (
-              <div key={ct.id} className="relative">
-                {gridCallTimeDragIndex !== null && gridCallTimeDropTarget === index && gridCallTimeDragIndex !== index && gridCallTimeDragIndex !== index - 1 && (
-                  <div className="h-[2px] bg-blue-500 rounded-full -mt-[1px] mb-[1px]" data-export-hide />
-                )}
-                <div
-                  className={`cursor-default transition-transform duration-150 ${gridCallTimeDragIndex === index ? 'scale-105 shadow-lg bg-blue-50 border border-blue-300 rounded z-10' : ''} ${gridCallTimeDragIndex !== null && gridCallTimeDragIndex !== index ? 'opacity-60' : ''}`}
-                  draggable
-                  onDragStart={(e) => {
-                    callTimeWasDragging.current = true;
-                    setGridCallTimeDragIndex(index);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    setGridCallTimeDropTarget(index);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (gridCallTimeDragIndex !== null && gridCallTimeDragIndex !== index) {
-                      reorderCallTimes(gridCallTimeDragIndex, index);
-                    }
-                    setGridCallTimeDragIndex(null);
-                    setGridCallTimeDropTarget(null);
-                  }}
-                  onDragEnd={() => {
-                    setGridCallTimeDragIndex(null);
-                    setGridCallTimeDropTarget(null);
-                    setTimeout(() => { callTimeWasDragging.current = false; }, 0);
-                  }}
-                  onClick={() => { if (!callTimeWasDragging.current) setActiveModal('callTimes'); }}
-                >
-                    {hasTime && hasLabel ? (
-                      <span>
-                        <span className="font-semibold">{ct.time}:</span> {ct.label}
-                      </span>
-                    ) : hasTime ? (
-                      <span>
-                        <span className="font-semibold">{ct.time}:</span>
-                      </span>
-                    ) : hasLabel ? (
-                      <span className="text-gray-300 italic">
-                        {ct.label}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300 italic" data-export-hide>—</span>
-                    )}
+          {(() => {
+            const displayCallTimes = callTimePreviewOrder
+              ? callTimePreviewOrder.map(id => schedule.callTimes.find(ct => ct.id === id)!).filter(Boolean)
+              : schedule.callTimes;
+            return displayCallTimes.map((ct, index) => {
+              const hasTime = ct.time.trim() !== '';
+              const hasLabel = ct.label.trim() !== '';
+              const isDragged = gridCallTimeDragIndex !== null && ct.id === schedule.callTimes[gridCallTimeDragIndex]?.id;
+              return (
+                <div key={ct.id}>
+                  <div
+                    className={`cursor-default transition-opacity duration-200 ${isDragged ? 'opacity-20' : ''}`}
+                    draggable
+                    onDragStart={(e) => {
+                      callTimeWasDragging.current = true;
+                      const origIndex = schedule.callTimes.findIndex(sct => sct.id === ct.id);
+                      setGridCallTimeDragIndex(origIndex);
+                      setCallTimePreviewOrder(schedule.callTimes.map(sct => sct.id));
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (gridCallTimeDragIndex !== null) {
+                        const dragId = schedule.callTimes[gridCallTimeDragIndex].id;
+                        setCallTimePreviewOrder(prev => {
+                          if (!prev) return prev;
+                          const currentPos = prev.indexOf(dragId);
+                          if (currentPos === index) return prev;
+                          const next = prev.filter(id => id !== dragId);
+                          next.splice(index, 0, dragId);
+                          return next;
+                        });
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (gridCallTimeDragIndex !== null && callTimePreviewOrder) {
+                        const dragId = schedule.callTimes[gridCallTimeDragIndex].id;
+                        const toIndex = callTimePreviewOrder.indexOf(dragId);
+                        if (gridCallTimeDragIndex !== toIndex) {
+                          reorderCallTimes(gridCallTimeDragIndex, toIndex);
+                        }
+                      }
+                      setGridCallTimeDragIndex(null);
+                      setCallTimePreviewOrder(null);
+                    }}
+                    onDragEnd={() => {
+                      setGridCallTimeDragIndex(null);
+                      setCallTimePreviewOrder(null);
+                      setTimeout(() => { callTimeWasDragging.current = false; }, 0);
+                    }}
+                    onClick={() => { if (!callTimeWasDragging.current) setActiveModal('callTimes'); }}
+                  >
+                      {hasTime && hasLabel ? (
+                        <span>
+                          <span className="font-semibold">{ct.time}:</span> {ct.label}
+                        </span>
+                      ) : hasTime ? (
+                        <span>
+                          <span className="font-semibold">{ct.time}:</span>
+                        </span>
+                      ) : hasLabel ? (
+                        <span className="text-gray-300 italic">
+                          {ct.label}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 italic" data-export-hide>—</span>
+                      )}
+                  </div>
                 </div>
-                {index === schedule.callTimes.length - 1 && gridCallTimeDropTarget !== null && gridCallTimeDropTarget >= schedule.callTimes.length - 1 && gridCallTimeDragIndex !== null && gridCallTimeDragIndex !== index && (
-                  <div className="h-[2px] bg-blue-500 rounded-full mt-[1px]" data-export-hide />
-                )}
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
           {schedule.callTimes.length === 0 && (
             <div className="text-gray-400 italic text-[9px] cursor-pointer" data-export-hide onClick={() => setActiveModal('callTimes')}>Click to add call times</div>
           )}
