@@ -19,10 +19,14 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isLocalEdit = useRef(false);
 
-  // Sync external value changes
+  // Sync external value changes (skip when the change originated from local typing)
   useEffect(() => {
-    setQuery(value);
+    if (!isLocalEdit.current) {
+      setQuery(value);
+    }
+    isLocalEdit.current = false;
   }, [value]);
 
   // Debounced fetch
@@ -36,7 +40,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`,
-          { headers: { 'User-Agent': 'QuinnlanScheduleApp/1.0' } }
+          { headers: { 'Accept': 'application/json' } }
         );
         const data: NominatimResult[] = await res.json();
         setSuggestions(data);
@@ -66,6 +70,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
         type="text"
         value={query}
         onChange={(e) => {
+          isLocalEdit.current = true;
           setQuery(e.target.value);
           onChange(e.target.value);
         }}
