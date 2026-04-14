@@ -47,7 +47,7 @@ function renderFormattedText(text: string) {
 
     if (isBullet) {
       return (
-        <span key={lineIdx} className="block pl-4">
+        <span key={lineIdx} className="block pl-4 mb-2">
           {lineIdx > 0 && '\n'}
           {'• '}{parts}
         </span>
