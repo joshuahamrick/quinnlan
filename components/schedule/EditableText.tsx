@@ -172,34 +172,23 @@ export default function EditableText({
 
       if (node) {
         const text = node.textContent || '';
-        if (text.startsWith('• ')) {
+        if (text.startsWith('• ') || text.startsWith('•')) {
           e.preventDefault();
-          if (text.trim() === '•') {
-            // Empty bullet — remove bullet and insert plain new line
-            (node as HTMLElement).textContent = '';
-            // Place cursor in the now-empty line
-            const newRange = document.createRange();
-            newRange.setStart(node, 0);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
+          // Always insert a new bullet line after the current one
+          const newDiv = document.createElement('div');
+          newDiv.textContent = '• ';
+          if (node.nextSibling) {
+            editableRef.current!.insertBefore(newDiv, node.nextSibling);
           } else {
-            // Insert a new bullet line after the current one
-            const newDiv = document.createElement('div');
-            newDiv.textContent = '• ';
-            if (node.nextSibling) {
-              editableRef.current!.insertBefore(newDiv, node.nextSibling);
-            } else {
-              editableRef.current!.appendChild(newDiv);
-            }
-            // Move cursor to end of the new bullet prefix
-            const newRange = document.createRange();
-            const textNode = newDiv.firstChild!;
-            newRange.setStart(textNode, textNode.textContent!.length);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
+            editableRef.current!.appendChild(newDiv);
           }
+          // Place cursor after "• "
+          const newRange = document.createRange();
+          const textNode = newDiv.firstChild!;
+          newRange.setStart(textNode, 2);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
         }
       }
     }
