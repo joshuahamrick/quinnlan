@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import type { SceneRow as SceneRowType, ActionBarRow, ActionBarType } from '@/lib/types';
 import { useWeatherSync } from '@/lib/useWeatherSync';
@@ -21,10 +21,19 @@ export default function ScheduleEditor() {
   const { schedule, insertRowAfter, addRow, reorderRows } = useScheduleStore();
   const [insertMenuId, setInsertMenuId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+  const [previewOrder, setPreviewOrder] = useState<string[] | null>(null);
+  const wasDragging = useRef(false);
 
-  const handleDragStart = useCallback((e: React.DragEvent, rowId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, rowId: string, regularRows: { id: string }[]) => {
+    // Don't drag if the target is an interactive element
+    const target = e.target as HTMLElement;
+    if (target.closest('input, textarea, button, [contenteditable]')) {
+      e.preventDefault();
+      return;
+    }
+    wasDragging.current = true;
     setDraggedId(rowId);
+    setPreviewOrder(regularRows.map(r => r.id));
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', rowId);
   }, []);
@@ -32,38 +41,56 @@ export default function ScheduleEditor() {
   const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDropTargetIndex(index);
-  }, []);
+    if (draggedId !== null) {
+      setPreviewOrder(prev => {
+        if (!prev) return prev;
+        const currentPos = prev.indexOf(draggedId);
+        if (currentPos === index) return prev;
+        const next = prev.filter(id => id !== draggedId);
+        next.splice(index, 0, draggedId);
+        return next;
+      });
+    }
+  }, [draggedId]);
 
-  const handleDrop = useCallback((e: React.DragEvent, regularRows: { id: string }[]) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    if (draggedId == null || dropTargetIndex == null) return;
+    if (draggedId == null || previewOrder == null) return;
 
     const fromRow = schedule.rows.findIndex((r) => r.id === draggedId);
-    // dropTargetIndex is the visual position in regularRows where we want to insert.
-    // Map it back to the schedule.rows index.
+    const toVisualIndex = previewOrder.indexOf(draggedId);
+    // Map the preview position back to schedule.rows index
     let toRow: number;
-    if (dropTargetIndex >= regularRows.length) {
-      // Dropping after the last regular row — find the index of the last regular row + 1
-      const lastRegular = regularRows[regularRows.length - 1];
-      toRow = schedule.rows.findIndex((r) => r.id === lastRegular.id) + 1;
+    if (toVisualIndex >= previewOrder.length - 1) {
+      // Last position — find the index after the last non-dragged row
+      const lastId = previewOrder[previewOrder.length - 1];
+      if (lastId === draggedId && previewOrder.length > 1) {
+        const beforeLastId = previewOrder[previewOrder.length - 2];
+        toRow = schedule.rows.findIndex((r) => r.id === beforeLastId) + 1;
+      } else {
+        toRow = schedule.rows.findIndex((r) => r.id === lastId) + 1;
+      }
     } else {
-      toRow = schedule.rows.findIndex((r) => r.id === regularRows[dropTargetIndex].id);
+      // Find the row that's currently at the target visual position
+      // The dragged item wants to go before the item currently after it in preview
+      const nextId = previewOrder[toVisualIndex + 1];
+      toRow = schedule.rows.findIndex((r) => r.id === nextId);
     }
 
     if (fromRow !== -1 && toRow !== -1 && fromRow !== toRow) {
-      // If moving down, adjust for the removal shifting indices
       const adjustedTo = fromRow < toRow ? toRow - 1 : toRow;
       reorderRows(fromRow, adjustedTo);
     }
 
     setDraggedId(null);
-    setDropTargetIndex(null);
-  }, [draggedId, dropTargetIndex, schedule.rows, reorderRows]);
+    setPreviewOrder(null);
+    setTimeout(() => { wasDragging.current = false; }, 0);
+  }, [draggedId, previewOrder, schedule.rows, reorderRows]);
 
   const handleDragEnd = useCallback(() => {
     setDraggedId(null);
-    setDropTargetIndex(null);
+    setPreviewOrder(null);
+    setTimeout(() => { wasDragging.current = false; }, 0);
   }, []);
 
   const createSceneRow = (): SceneRowType => ({
@@ -132,87 +159,77 @@ export default function ScheduleEditor() {
               (r as ActionBarRow).actionType === 'taillights')
         );
 
+        const displayRows = previewOrder
+          ? previewOrder.map(id => regularRows.find(r => r.id === id)!).filter(Boolean)
+          : regularRows;
+
         return (
           <>
-            {regularRows.map((row, index) => (
-              <div key={row.id}>
-                {/* Drop indicator above this row */}
-                {draggedId != null && dropTargetIndex === index && draggedId !== row.id && (
-                  <div className="h-0.5 bg-blue-500 mx-1" />
-                )}
-                <div
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, row.id)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnd={handleDragEnd}
-                  onDrop={(e) => handleDrop(e, regularRows)}
-                  className={`relative group/row ${draggedId === row.id ? 'opacity-40' : ''}`}
-                >
-                  {/* Drag handle */}
+            {displayRows.map((row, index) => {
+              const isDragged = draggedId === row.id;
+              return (
+                <div key={row.id}>
                   <div
-                    data-export-hide
-                    className="absolute left-0 top-0 bottom-0 w-6 z-10 flex items-center justify-center cursor-grab opacity-0 group-hover/row:opacity-100 transition-opacity"
-                    onMouseDown={(e) => e.stopPropagation()}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, row.id, regularRows)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragEnd={handleDragEnd}
+                    onDrop={handleDrop}
+                    className={`relative transition-all duration-200 ${
+                      isDragged
+                        ? 'scale-[1.02] shadow-lg bg-blue-50/50 border border-blue-300 rounded z-10'
+                        : draggedId != null
+                          ? 'opacity-60'
+                          : ''
+                    }`}
+                    data-export-hide={isDragged ? true : undefined}
                   >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
-                      <circle cx="5" cy="3" r="1.5" fill="currentColor" />
-                      <circle cx="11" cy="3" r="1.5" fill="currentColor" />
-                      <circle cx="5" cy="8" r="1.5" fill="currentColor" />
-                      <circle cx="11" cy="8" r="1.5" fill="currentColor" />
-                      <circle cx="5" cy="13" r="1.5" fill="currentColor" />
-                      <circle cx="11" cy="13" r="1.5" fill="currentColor" />
-                    </svg>
-                  </div>
-                  {row.type === 'scene' ? (
-                    <SceneRow row={row as SceneRowType} />
-                  ) : (
-                    <ActionBar row={row as ActionBarRow} />
-                  )}
-                </div>
-
-                {/* Drop indicator after last row */}
-                {draggedId != null && index === regularRows.length - 1 && dropTargetIndex === regularRows.length && (
-                  <div className="h-0.5 bg-blue-500 mx-1" />
-                )}
-
-                {/* Insert button between rows */}
-                <div className="relative h-0 group/insert">
-                  <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
-                    <button
-                      onClick={() =>
-                        setInsertMenuId(insertMenuId === row.id ? null : row.id)
-                      }
-                      className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow"
-                    >
-                      +
-                    </button>
-                    {insertMenuId === row.id && (
-                      <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap">
-                        <button
-                          onClick={() => handleInsert(row.id, 'scene')}
-                          className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                        >
-                          Strip
-                        </button>
-                        <button
-                          onClick={() => handleInsert(row.id, 'action')}
-                          className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                        >
-                          Banner
-                        </button>
-                      </div>
+                    {row.type === 'scene' ? (
+                      <SceneRow row={row as SceneRowType} />
+                    ) : (
+                      <ActionBar row={row as ActionBarRow} />
                     )}
                   </div>
+
+                  {/* Insert button between rows */}
+                  <div className="relative h-0 group/insert">
+                    <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
+                      <button
+                        onClick={() =>
+                          setInsertMenuId(insertMenuId === row.id ? null : row.id)
+                        }
+                        className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow"
+                      >
+                        +
+                      </button>
+                      {insertMenuId === row.id && (
+                        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap">
+                          <button
+                            onClick={() => handleInsert(row.id, 'scene')}
+                            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+                          >
+                            Strip
+                          </button>
+                          <button
+                            onClick={() => handleInsert(row.id, 'action')}
+                            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+                          >
+                            Banner
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Add row button - inserts before terminal rows */}
             <div
               className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative"
               data-export-hide
               onDragOver={(e) => handleDragOver(e, regularRows.length)}
-              onDrop={(e) => handleDrop(e, regularRows)}
+              onDrop={handleDrop}
             >
               <button
                 onClick={() =>
