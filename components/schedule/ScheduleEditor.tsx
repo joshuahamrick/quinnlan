@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useScheduleStore } from '@/lib/store';
+import { calculateDuration } from '@/lib/time-utils';
 import type { SceneRow as SceneRowType, ActionBarRow, ActionBarType } from '@/lib/types';
 import { useWeatherSync } from '@/lib/useWeatherSync';
 import { useHospitalSync } from '@/lib/useHospitalSync';
@@ -19,11 +20,23 @@ import ActionBar from './ActionBar';
 export default function ScheduleEditor() {
   useWeatherSync();
   useHospitalSync();
-  const { schedule, insertRowAfter, addRow, reorderRows } = useScheduleStore();
+  const { schedule, insertRowAfter, addRow, reorderRows, updateRow } = useScheduleStore();
   const [insertMenuId, setInsertMenuId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [previewOrder, setPreviewOrder] = useState<string[] | null>(null);
   const wasDragging = useRef(false);
+
+  // Sync First Shot time → first scene row's start time
+  useEffect(() => {
+    const firstScene = schedule.rows.find((r): r is SceneRowType => r.type === 'scene');
+    if (firstScene && schedule.firstShotTime && firstScene.timeStart !== schedule.firstShotTime) {
+      const duration = firstScene.timeEnd ? calculateDuration(schedule.firstShotTime, firstScene.timeEnd) : '';
+      updateRow(firstScene.id, {
+        timeStart: schedule.firstShotTime,
+        ...(duration ? { allowTime: duration } : {}),
+      });
+    }
+  }, [schedule.firstShotTime, schedule.rows, updateRow]);
 
   const handleDragStart = useCallback((e: React.DragEvent, rowId: string, regularRows: { id: string }[]) => {
     // Don't drag if the target is an interactive element
@@ -161,6 +174,7 @@ export default function ScheduleEditor() {
               (r as ActionBarRow).actionType === 'taillights')
         );
 
+        const firstSceneId = regularRows.find(r => r.type === 'scene')?.id;
         const displayRows = previewOrder
           ? previewOrder.map(id => regularRows.find(r => r.id === id)!).filter(Boolean)
           : regularRows;
@@ -187,7 +201,7 @@ export default function ScheduleEditor() {
                     data-export-hide={isDragged ? true : undefined}
                   >
                     {row.type === 'scene' ? (
-                      <SceneRow row={row as SceneRowType} />
+                      <SceneRow row={row as SceneRowType} startTimeReadOnly={row.id === firstSceneId} />
                     ) : (
                       <ActionBar row={row as ActionBarRow} />
                     )}

@@ -11,9 +11,10 @@ import DurationInput from './DurationInput';
 
 interface SceneRowProps {
   row: SceneRowType;
+  startTimeReadOnly?: boolean;
 }
 
-export default function SceneRow({ row }: SceneRowProps) {
+export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
   const { updateRow, removeRow } = useScheduleStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const boardIsDragging = useRef(false);
@@ -54,17 +55,24 @@ export default function SceneRow({ row }: SceneRowProps) {
     <div data-schedule-row className="grid grid-cols-[10%_25%_20%_12%_25%_8%] border border-gray-300 border-t-0 text-xs group relative hover:bg-blue-50/30 transition-colors">
       {/* Time */}
       <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
-        <TimeInput
-          value={row.timeStart}
-          onChange={(v) => {
-            const duration = calculateDuration(v, row.timeEnd);
-            updateRow(row.id, { timeStart: v, ...(duration ? { allowTime: duration } : {}) });
-          }}
-          placeholder="Start"
-          className="text-[11px] font-semibold text-center"
-          id={`start-${row.id}`}
-          nextInputId={`end-${row.id}`}
-        />
+        {startTimeReadOnly ? (
+          <div className="text-[11px] font-semibold text-center text-gray-500 flex items-center justify-center gap-0.5" title="Linked to First Shot">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" className="shrink-0 opacity-50"><path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9.4a2 2 0 0 1-1.4.58H5a2 2 0 1 1 0-4h1.354zM9.646 5.5H12a3 3 0 0 1 0 6H9a3 3 0 0 1-2.83-4h.43A2 2 0 0 0 8 9.58h3a2 2 0 1 0 0-4H9.646z"/></svg>
+            {row.timeStart || <span className="text-gray-400">Start</span>}
+          </div>
+        ) : (
+          <TimeInput
+            value={row.timeStart}
+            onChange={(v) => {
+              const duration = calculateDuration(v, row.timeEnd);
+              updateRow(row.id, { timeStart: v, ...(duration ? { allowTime: duration } : {}) });
+            }}
+            placeholder="Start"
+            className="text-[11px] font-semibold text-center"
+            id={`start-${row.id}`}
+            nextInputId={`end-${row.id}`}
+          />
+        )}
         <div className="text-[10px] text-gray-500 text-center">to</div>
         <TimeInput
           value={row.timeEnd}
