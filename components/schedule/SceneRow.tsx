@@ -86,7 +86,7 @@ export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
       </div>
 
       {/* Description */}
-      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
+      <div draggable="false" className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
         <EditableText
           value={row.description}
           onChange={(v) => updateRow(row.id, { description: v })}
@@ -98,6 +98,7 @@ export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
 
       {/* Boards */}
       <div
+        draggable="false"
         className={`border-r border-gray-300 px-2 py-1 relative group/boards cursor-pointer flex items-center justify-center ${boardDropActive ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''}`}
         onClick={() => { if (!boardIsDragging.current) fileRef.current?.click(); }}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -139,7 +140,7 @@ export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
       </div>
 
       {/* Talent */}
-      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
+      <div draggable="false" className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
         <EditableText
           value={row.talent}
           onChange={(v) => updateRow(row.id, { talent: v })}
@@ -150,7 +151,7 @@ export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
       </div>
 
       {/* Details / Notes */}
-      <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
+      <div draggable="false" className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
         <EditableText
           value={row.details}
           onChange={(v) => updateRow(row.id, { details: v })}

@@ -216,6 +216,26 @@ export default function ScheduleEditor() {
       e.preventDefault();
       return;
     }
+
+    // Cancel drag if active element is editable (e.g. user clicked into a field)
+    const active = document.activeElement;
+    if (active && (
+      active.tagName === 'INPUT' ||
+      active.tagName === 'TEXTAREA' ||
+      (active as HTMLElement).isContentEditable ||
+      (active as HTMLElement).closest('[contenteditable="true"]')
+    )) {
+      e.preventDefault();
+      return;
+    }
+
+    // Cancel drag if there's a text selection in progress
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      e.preventDefault();
+      return;
+    }
+
     wasDragging.current = true;
     setDraggedId(rowId);
     setDragSection(section);
