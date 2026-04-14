@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useScheduleStore } from '@/lib/store';
-import { calculateDuration } from '@/lib/time-utils';
+import { calculateDuration, calculateEndTime } from '@/lib/time-utils';
 import { extractColorsFromImage } from '@/lib/colors';
 import type { ActionBarRow } from '@/lib/types';
 import EditableText from './EditableText';
@@ -142,7 +142,10 @@ export default function ActionBar({ row }: ActionBarProps) {
         <div className="w-[100px] shrink-0 text-right">
           <DurationInput
             value={row.allowTime}
-            onChange={(v) => updateRow(row.id, { allowTime: v })}
+            onChange={(v) => {
+              const newEnd = calculateEndTime(row.timeStart, v);
+              updateRow(row.id, { allowTime: v, ...(newEnd ? { timeEnd: newEnd } : {}) });
+            }}
             placeholder="Time"
             className="text-white text-[11px]"
             variant="dark"

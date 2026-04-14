@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import { compressImage } from '@/lib/images';
-import { calculateDuration } from '@/lib/time-utils';
+import { calculateDuration, calculateEndTime } from '@/lib/time-utils';
 import type { SceneRow as SceneRowType } from '@/lib/types';
 import EditableText from './EditableText';
 import TimeInput from './TimeInput';
@@ -157,7 +157,10 @@ export default function SceneRow({ row }: SceneRowProps) {
       <div className="px-2 py-1 flex flex-col justify-center items-center text-center">
         <DurationInput
           value={row.allowTime}
-          onChange={(v) => updateRow(row.id, { allowTime: v })}
+          onChange={(v) => {
+            const newEnd = calculateEndTime(row.timeStart, v);
+            updateRow(row.id, { allowTime: v, ...(newEnd ? { timeEnd: newEnd } : {}) });
+          }}
           placeholder="Time"
           className="text-[11px]"
         />

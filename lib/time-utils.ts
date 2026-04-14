@@ -77,6 +77,51 @@ export function formatTimeInput(raw: string): string {
 }
 
 /**
+ * Parse a duration string like "1hr 30mins", "45mins", "2hrs" into total minutes.
+ * Returns null if unparseable.
+ */
+export function parseDuration(durationStr: string): number | null {
+  const s = durationStr.trim().toLowerCase();
+  if (!s) return null;
+
+  const hrMatch = s.match(/(\d+)\s*hrs?/);
+  const minMatch = s.match(/(\d+)\s*mins?/);
+
+  if (!hrMatch && !minMatch) return null;
+
+  const hours = hrMatch ? parseInt(hrMatch[1], 10) : 0;
+  const minutes = minMatch ? parseInt(minMatch[1], 10) : 0;
+
+  const total = hours * 60 + minutes;
+  return total > 0 ? total : null;
+}
+
+/**
+ * Calculate the end time given a start time and a duration.
+ * Returns a formatted time string (e.g., "9:30A", "1:15P") or empty string if unparseable.
+ */
+export function calculateEndTime(startStr: string, durationStr: string): string {
+  const startMins = parseTime(startStr);
+  const durationMins = parseDuration(durationStr);
+
+  if (startMins === null || durationMins === null) return '';
+
+  const endMins = startMins + durationMins;
+
+  // Convert back to 12-hour format
+  const totalMins = endMins % (24 * 60); // wrap at midnight
+  const h24 = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+
+  const period = h24 >= 12 ? 'P' : 'A';
+  let h12 = h24 % 12;
+  if (h12 === 0) h12 = 12;
+
+  const mm = m.toString().padStart(2, '0');
+  return `${h12}:${mm}${period}`;
+}
+
+/**
  * Calculate the duration between two production-schedule time strings.
  * Returns a formatted string like "30mins", "1hr", "1hr 30mins", "2hrs".
  * Returns empty string if either time is unparseable or end <= start.
