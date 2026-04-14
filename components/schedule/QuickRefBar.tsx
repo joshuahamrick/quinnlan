@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import { extractColorsFromImage } from '@/lib/colors';
 import EditableText from './EditableText';
+import TimeInput from './TimeInput';
 
 const PRESET_COLORS = [
   '#1a1a2e', '#16213e', '#0f3460', '#533483',
@@ -85,11 +86,13 @@ export default function QuickRefBar() {
               className="text-white font-bold [&_span]:text-white/60"
             />
             <span>:</span>
-            <EditableText
+            <TimeInput
               value={entry.time}
               onChange={(v) => updateQuickRefEntry(entry.id, { time: v })}
               placeholder="Time"
               className="text-white font-bold [&_span]:text-white/60"
+              variant="dark"
+              showPeriodPill
             />
             <button
               data-export-hide
