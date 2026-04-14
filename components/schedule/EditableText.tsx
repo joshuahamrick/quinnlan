@@ -77,6 +77,20 @@ export default function EditableText({
   const editableRef = useRef<HTMLDivElement>(null);
   const { registerEditable, unregisterEditable } = useFormatting();
 
+  const syncBulletClasses = useCallback(() => {
+    if (!editableRef.current) return;
+    const children = editableRef.current.children;
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i] as HTMLElement;
+      const text = child.textContent || '';
+      if (text.trimStart().startsWith('•')) {
+        child.classList.add('bullet-line');
+      } else {
+        child.classList.remove('bullet-line');
+      }
+    }
+  }, []);
+
   useEffect(() => {
     setDraft(value);
   }, [value]);
@@ -94,6 +108,7 @@ export default function EditableText({
         selection.removeAllRanges();
         selection.addRange(range);
       }
+      syncBulletClasses();
       registerEditable(editableRef.current);
     } else if (editing && inputRef.current) {
       inputRef.current.focus();
@@ -102,7 +117,7 @@ export default function EditableText({
     if (!editing && multiline) {
       unregisterEditable();
     }
-  }, [editing, multiline, registerEditable, unregisterEditable]);
+  }, [editing, multiline, registerEditable, unregisterEditable, syncBulletClasses]);
 
   const save = useCallback(() => {
     if (multiline && editableRef.current) {
@@ -153,6 +168,7 @@ export default function EditableText({
           if (node.nodeType === Node.ELEMENT_NODE) {
             // Use <br> to keep the empty div alive in contentEditable
             (node as HTMLElement).innerHTML = '<br>';
+            (node as HTMLElement).classList.remove('bullet-line');
           } else {
             node.textContent = '\u200B';
           }
@@ -226,6 +242,7 @@ export default function EditableText({
           e.preventDefault();
           // Always insert a new bullet line after the current one
           const newDiv = document.createElement('div');
+          newDiv.classList.add('bullet-line');
           newDiv.textContent = '• ';
           if (node.nextSibling) {
             editableRef.current!.insertBefore(newDiv, node.nextSibling);
@@ -272,6 +289,7 @@ export default function EditableText({
         suppressContentEditableWarning
         onBlur={save}
         onKeyDown={handleKeyDown}
+        onInput={syncBulletClasses}
         className={`w-full border border-blue-400 rounded px-1 py-0.5 text-sm outline-none min-h-[3em] whitespace-pre-wrap ${className} ${inputAlign}`}
         style={{ resize: 'vertical', overflow: 'auto' }}
         data-placeholder={placeholder}
