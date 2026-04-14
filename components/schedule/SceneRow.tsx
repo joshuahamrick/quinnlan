@@ -86,7 +86,16 @@ export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
       </div>
 
       {/* Description */}
-      <div draggable="false" className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
+      <div draggable="false" className="relative group/cell border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
+        {row.description && (
+          <button
+            onClick={(e) => { e.stopPropagation(); updateRow(row.id, { description: '' }); }}
+            className="absolute top-0.5 right-0.5 opacity-0 group-hover/cell:opacity-100 transition-opacity bg-gray-100 hover:bg-rose-100 text-gray-400 hover:text-rose-500 rounded-full text-[9px] px-1.5 py-0.5 z-10"
+            data-export-hide
+          >
+            ✕
+          </button>
+        )}
         <EditableText
           value={row.description}
           onChange={(v) => updateRow(row.id, { description: v })}
@@ -140,7 +149,16 @@ export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
       </div>
 
       {/* Talent */}
-      <div draggable="false" className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
+      <div draggable="false" className="relative group/cell border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
+        {row.talent && (
+          <button
+            onClick={(e) => { e.stopPropagation(); updateRow(row.id, { talent: '' }); }}
+            className="absolute top-0.5 right-0.5 opacity-0 group-hover/cell:opacity-100 transition-opacity bg-gray-100 hover:bg-rose-100 text-gray-400 hover:text-rose-500 rounded-full text-[9px] px-1.5 py-0.5 z-10"
+            data-export-hide
+          >
+            ✕
+          </button>
+        )}
         <EditableText
           value={row.talent}
           onChange={(v) => updateRow(row.id, { talent: v })}
@@ -151,7 +169,16 @@ export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
       </div>
 
       {/* Details / Notes */}
-      <div draggable="false" className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
+      <div draggable="false" className="relative group/cell border-r border-gray-300 px-2 py-1 flex flex-col justify-center items-center text-center">
+        {row.details && (
+          <button
+            onClick={(e) => { e.stopPropagation(); updateRow(row.id, { details: '' }); }}
+            className="absolute top-0.5 right-0.5 opacity-0 group-hover/cell:opacity-100 transition-opacity bg-gray-100 hover:bg-rose-100 text-gray-400 hover:text-rose-500 rounded-full text-[9px] px-1.5 py-0.5 z-10"
+            data-export-hide
+          >
+            ✕
+          </button>
+        )}
         <EditableText
           value={row.details}
           onChange={(v) => updateRow(row.id, { details: v })}
