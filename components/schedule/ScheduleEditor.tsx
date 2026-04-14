@@ -20,15 +20,16 @@ import ActionBar from './ActionBar';
 export default function ScheduleEditor() {
   useWeatherSync();
   useHospitalSync();
-  const { schedule, insertRowAfter, addRow, reorderRows, updateRow } = useScheduleStore();
+  const { schedule, insertRowAfter, addRow, reorderRows, updateRow, updateField } = useScheduleStore();
   const [insertMenuId, setInsertMenuId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [previewOrder, setPreviewOrder] = useState<string[] | null>(null);
+  const [dragSection, setDragSection] = useState<'pre' | 'main' | null>(null);
   const wasDragging = useRef(false);
 
   // Sync First Shot time → first scene row's start time
   useEffect(() => {
-    const firstScene = schedule.rows.find((r): r is SceneRowType => r.type === 'scene');
+    const firstScene = schedule.rows.find((r): r is SceneRowType => r.type === 'scene' && !r.preSchedule);
     if (firstScene && schedule.firstShotTime && firstScene.timeStart !== schedule.firstShotTime) {
       const newEnd = firstScene.allowTime
         ? calculateEndTime(schedule.firstShotTime, firstScene.allowTime)
@@ -51,7 +52,7 @@ export default function ScheduleEditor() {
           (r as ActionBarRow).actionType !== 'taillights')
     );
 
-    const firstSceneId = regular.find((r) => r.type === 'scene')?.id;
+    const firstSceneId = regular.find((r) => r.type === 'scene' && !r.preSchedule)?.id;
     const updates: { id: string; changes: Record<string, string> }[] = [];
     let prevEnd = ''; // track the running end time through the chain
 
@@ -94,7 +95,7 @@ export default function ScheduleEditor() {
     updates.forEach((u) => updateRow(u.id, u.changes));
   }, [schedule.rows, updateRow]);
 
-  const handleDragStart = useCallback((e: React.DragEvent, rowId: string, regularRows: { id: string }[]) => {
+  const handleDragStart = useCallback((e: React.DragEvent, rowId: string, sectionRows: { id: string }[], section: 'pre' | 'main') => {
     // Don't drag if the target is an interactive element
     const target = e.target as HTMLElement;
     if (target.closest('input, textarea, button, [contenteditable]')) {
@@ -103,15 +104,16 @@ export default function ScheduleEditor() {
     }
     wasDragging.current = true;
     setDraggedId(rowId);
-    setPreviewOrder(regularRows.map(r => r.id));
+    setDragSection(section);
+    setPreviewOrder(sectionRows.map(r => r.id));
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', rowId);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent, index: number, section?: 'pre' | 'main') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (draggedId !== null) {
+    if (draggedId !== null && (!section || dragSection === section)) {
       setPreviewOrder(prev => {
         if (!prev) return prev;
         const currentPos = prev.indexOf(draggedId);
@@ -121,7 +123,7 @@ export default function ScheduleEditor() {
         return next;
       });
     }
-  }, [draggedId]);
+  }, [draggedId, dragSection]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -154,16 +156,18 @@ export default function ScheduleEditor() {
 
     setDraggedId(null);
     setPreviewOrder(null);
+    setDragSection(null);
     setTimeout(() => { wasDragging.current = false; }, 0);
   }, [draggedId, previewOrder, schedule.rows, reorderRows]);
 
   const handleDragEnd = useCallback(() => {
     setDraggedId(null);
     setPreviewOrder(null);
+    setDragSection(null);
     setTimeout(() => { wasDragging.current = false; }, 0);
   }, []);
 
-  const createSceneRow = (): SceneRowType => ({
+  const createSceneRow = (preSchedule = false): SceneRowType => ({
     id: crypto.randomUUID(),
     type: 'scene',
     timeStart: '',
@@ -174,9 +178,10 @@ export default function ScheduleEditor() {
     talent: '',
     details: '',
     allowTime: '',
+    preSchedule,
   });
 
-  const createActionRow = (): ActionBarRow => ({
+  const createActionRow = (preSchedule = false): ActionBarRow => ({
     id: crypto.randomUUID(),
     type: 'action',
     timeStart: '',
@@ -184,6 +189,7 @@ export default function ScheduleEditor() {
     label: '',
     actionType: 'custom' as ActionBarType,
     allowTime: '',
+    preSchedule,
   });
 
   const handleInsert = (afterId: string, type: 'scene' | 'action') => {
@@ -195,6 +201,23 @@ export default function ScheduleEditor() {
   const handleAddToEnd = (type: 'scene' | 'action') => {
     const row = type === 'scene' ? createSceneRow() : createActionRow();
     addRow(row);
+    setInsertMenuId(null);
+  };
+
+  const handleInsertPreRow = (afterId: string, type: 'scene' | 'action') => {
+    const row = type === 'scene' ? createSceneRow(true) : createActionRow(true);
+    insertRowAfter(afterId, row);
+    setInsertMenuId(null);
+  };
+
+  const handleAddPreRow = (type: 'scene' | 'action') => {
+    const row = type === 'scene' ? createSceneRow(true) : createActionRow(true);
+    const preRows = schedule.rows.filter(r => r.preSchedule);
+    if (preRows.length > 0) {
+      insertRowAfter(preRows[preRows.length - 1].id, row);
+    } else {
+      updateField('rows', [row, ...schedule.rows]);
+    }
     setInsertMenuId(null);
   };
 
@@ -214,14 +237,120 @@ export default function ScheduleEditor() {
       <ColumnHeaders />
       <CrewCallRow />
       <FirstShotRow />
+
+      {/* Pre-schedule rows (between First Shot and Day Title) */}
+      {(() => {
+        const preRows = schedule.rows.filter(r => r.preSchedule);
+        const displayPreRows = dragSection === 'pre' && previewOrder
+          ? previewOrder.map(id => preRows.find(r => r.id === id)!).filter(Boolean)
+          : preRows;
+
+        return (
+          <>
+            {displayPreRows.map((row, index) => {
+              const isDragged = draggedId === row.id;
+              return (
+                <div key={row.id}>
+                  <div
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, row.id, preRows, 'pre')}
+                    onDragOver={(e) => handleDragOver(e, index, 'pre')}
+                    onDragEnd={handleDragEnd}
+                    onDrop={handleDrop}
+                    className={`relative transition-all duration-200 ${
+                      isDragged
+                        ? 'scale-[1.02] shadow-lg bg-blue-50/50 border border-blue-300 rounded z-10'
+                        : draggedId != null && dragSection === 'pre'
+                          ? 'opacity-60'
+                          : ''
+                    }`}
+                    data-export-hide={isDragged ? true : undefined}
+                  >
+                    {row.type === 'scene' ? (
+                      <SceneRow row={row as SceneRowType} startTimeReadOnly={false} />
+                    ) : (
+                      <ActionBar row={row as ActionBarRow} />
+                    )}
+                  </div>
+
+                  {/* Insert button between pre-rows */}
+                  <div className="relative h-0 group/insert">
+                    <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
+                      <button
+                        onClick={() =>
+                          setInsertMenuId(insertMenuId === `pre-${row.id}` ? null : `pre-${row.id}`)
+                        }
+                        className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow"
+                      >
+                        +
+                      </button>
+                      {insertMenuId === `pre-${row.id}` && (
+                        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap">
+                          <button
+                            onClick={() => handleInsertPreRow(row.id, 'scene')}
+                            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+                          >
+                            Strip
+                          </button>
+                          <button
+                            onClick={() => handleInsertPreRow(row.id, 'action')}
+                            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+                          >
+                            Banner
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Add pre-row button */}
+            <div
+              className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative"
+              data-export-hide
+              onDragOver={(e) => handleDragOver(e, preRows.length, 'pre')}
+              onDrop={handleDrop}
+            >
+              <button
+                onClick={() =>
+                  setInsertMenuId(insertMenuId === '__pre-end' ? null : '__pre-end')
+                }
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center shadow"
+              >
+                +
+              </button>
+              {insertMenuId === '__pre-end' && (
+                <div className="absolute top-10 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap">
+                  <button
+                    onClick={() => handleAddPreRow('scene')}
+                    className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+                  >
+                    Strip
+                  </button>
+                  <button
+                    onClick={() => handleAddPreRow('action')}
+                    className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+                  >
+                    Banner
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
+
       <DayTitleRow />
 
       {(() => {
         const regularRows = schedule.rows.filter(
           (r) =>
-            r.type !== 'action' ||
+            !r.preSchedule &&
+            (r.type !== 'action' ||
             ((r as ActionBarRow).actionType !== 'wrap' &&
-              (r as ActionBarRow).actionType !== 'taillights')
+              (r as ActionBarRow).actionType !== 'taillights'))
         );
         const terminalRows = schedule.rows.filter(
           (r) =>
@@ -230,7 +359,7 @@ export default function ScheduleEditor() {
               (r as ActionBarRow).actionType === 'taillights')
         );
 
-        const displayRows = previewOrder
+        const displayRows = dragSection === 'main' && previewOrder
           ? previewOrder.map(id => regularRows.find(r => r.id === id)!).filter(Boolean)
           : regularRows;
 
@@ -245,14 +374,14 @@ export default function ScheduleEditor() {
                 <div key={row.id}>
                   <div
                     draggable
-                    onDragStart={(e) => handleDragStart(e, row.id, regularRows)}
-                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragStart={(e) => handleDragStart(e, row.id, regularRows, 'main')}
+                    onDragOver={(e) => handleDragOver(e, index, 'main')}
                     onDragEnd={handleDragEnd}
                     onDrop={handleDrop}
                     className={`relative transition-all duration-200 ${
                       isDragged
                         ? 'scale-[1.02] shadow-lg bg-blue-50/50 border border-blue-300 rounded z-10'
-                        : draggedId != null
+                        : draggedId != null && dragSection === 'main'
                           ? 'opacity-60'
                           : ''
                     }`}
@@ -302,7 +431,7 @@ export default function ScheduleEditor() {
             <div
               className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative"
               data-export-hide
-              onDragOver={(e) => handleDragOver(e, regularRows.length)}
+              onDragOver={(e) => handleDragOver(e, regularRows.length, 'main')}
               onDrop={handleDrop}
             >
               <button

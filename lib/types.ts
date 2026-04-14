@@ -109,6 +109,7 @@ export interface SceneRow {
   talent: string;
   details: string;
   allowTime: string;
+  preSchedule?: boolean;
 }
 
 export type ActionBarType = 'move' | 'lunch' | 'reset' | 'wrap' | 'taillights' | 'custom';
@@ -122,4 +123,5 @@ export interface ActionBarRow {
   actionType: ActionBarType;
   color?: string;
   allowTime: string;
+  preSchedule?: boolean;
 }
