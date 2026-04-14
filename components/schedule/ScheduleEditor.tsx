@@ -51,6 +51,7 @@ export default function ScheduleEditor() {
           (r as ActionBarRow).actionType !== 'taillights')
     );
 
+    const firstSceneId = regular.find((r) => r.type === 'scene')?.id;
     const updates: { id: string; changes: Record<string, string> }[] = [];
     let prevEnd = ''; // track the running end time through the chain
 
@@ -62,7 +63,10 @@ export default function ScheduleEditor() {
 
       // For rows after the first, start time should match previous end
       if (i > 0 && prevEnd) {
-        if (curr.timeStart !== prevEnd) {
+        // Don't override the first scene's start — First Shot sync owns it
+        if (curr.id === firstSceneId && schedule.firstShotTime) {
+          currentStart = curr.timeStart;
+        } else if (curr.timeStart !== prevEnd) {
           changes.timeStart = prevEnd;
           currentStart = prevEnd;
         }
