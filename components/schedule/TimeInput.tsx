@@ -176,6 +176,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   if (!focused && !hasValue) {
     return (
       <span
+        id={id}
         tabIndex={0}
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
         onClick={() => {
@@ -205,7 +206,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     // Separate A/P pill toggle (for call times modals)
     if (showPeriodPill) {
       return (
-        <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+        <span id={id} className={`inline-flex items-center justify-center gap-1 ${className}`}>
           <span
             tabIndex={0}
             className="cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors"
@@ -239,6 +240,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     // Plain text display — clicking anywhere opens the full editor
     return (
       <span
+        id={id}
         tabIndex={0}
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
         onClick={handleOpenEditor}
@@ -288,7 +290,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onClick={togglePeriod}
         onFocus={() => handleFocus()}
         onKeyDown={handlePeriodKeyDown}
-        className={`w-[1.6em] text-center rounded-full px-0.5 py-1 outline-none cursor-pointer font-medium transition-colors ${buttonClasses}`}
+        className={`w-[1.6em] text-center rounded-full px-0.5 py-1 outline-none cursor-pointer font-medium transition-colors focus:ring-2 focus:ring-blue-300 ${buttonClasses}`}
         style={{ fontSize: 'inherit' }}
       >
         {period || 'A'}
