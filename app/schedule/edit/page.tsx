@@ -43,7 +43,7 @@ export default function ScheduleEditPage() {
   const handleWheel = useCallback((e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
-      const delta = -e.deltaY * 0.001;
+      const delta = -e.deltaY * 0.005;
       handleZoomChange(zoom + delta);
     }
   }, [handleZoomChange, zoom]);
@@ -114,7 +114,7 @@ export default function ScheduleEditPage() {
           data-export-hide
         >
           <button
-            onClick={() => handleZoomChange(Math.round((zoom - 0.1) * 100) / 100)}
+            onClick={() => handleZoomChange(Math.round((zoom - 0.2) * 100) / 100)}
             className="flex h-6 w-6 items-center justify-center rounded-full text-sm text-gray-600 hover:bg-gray-100 transition-colors"
             aria-label="Zoom out"
           >
@@ -124,7 +124,7 @@ export default function ScheduleEditPage() {
             {Math.round(zoom * 100)}%
           </span>
           <button
-            onClick={() => handleZoomChange(Math.round((zoom + 0.1) * 100) / 100)}
+            onClick={() => handleZoomChange(Math.round((zoom + 0.2) * 100) / 100)}
             className="flex h-6 w-6 items-center justify-center rounded-full text-sm text-gray-600 hover:bg-gray-100 transition-colors"
             aria-label="Zoom in"
           >
