@@ -185,6 +185,26 @@ export default function EditableText({
       if (node) {
         const text = (node.textContent || '').replace(/\u200B/g, '');
         if (text.startsWith('• ') || text.startsWith('•')) {
+          // Check if cursor is at the very start of the line (before the bullet)
+          const cursorOffset = range.startOffset;
+          const isAtStart = cursorOffset === 0 && range.startContainer === node.firstChild;
+          const isAtDivStart = range.startContainer === node && cursorOffset === 0;
+
+          if (isAtStart || isAtDivStart) {
+            e.preventDefault();
+            // Insert a blank line ABOVE the current bullet
+            const newDiv = document.createElement('div');
+            newDiv.innerHTML = '<br>';
+            editableRef.current!.insertBefore(newDiv, node);
+            // Place cursor in the new blank line
+            const newRange = document.createRange();
+            newRange.setStart(newDiv, 0);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            return;
+          }
+
           e.preventDefault();
           // Always insert a new bullet line after the current one
           const newDiv = document.createElement('div');
