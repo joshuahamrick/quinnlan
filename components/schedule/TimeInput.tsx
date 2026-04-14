@@ -10,6 +10,7 @@ interface TimeInputProps {
   id?: string; // sets id on the hours input so other TimeInputs can focus it
   nextInputId?: string; // when Tab is pressed on period, focus element with this id
   variant?: 'light' | 'dark'; // 'dark' for colored backgrounds (banners)
+  showPeriodPill?: boolean; // true = separate clickable A/P pill in display mode
 }
 
 function parseTimeValue(value: string): { hours: string; minutes: string; period: string } {
@@ -26,7 +27,7 @@ function parseTimeValue(value: string): { hours: string; minutes: string; period
   return { hours, minutes, period };
 }
 
-export default function TimeInput({ value, onChange, placeholder, className = '', id, nextInputId, variant = 'light' }: TimeInputProps) {
+export default function TimeInput({ value, onChange, placeholder, className = '', id, nextInputId, variant = 'light', showPeriodPill = false }: TimeInputProps) {
   const parsed = parseTimeValue(value);
   const [hours, setHours] = useState(parsed.hours);
   const [minutes, setMinutes] = useState(parsed.minutes);
@@ -191,7 +192,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     );
   }
 
-  // When not focused and has value, show as plain text with clickable A/P toggle
+  // When not focused and has value, show display mode
   if (!focused && hasValue) {
     const displayPeriod = parsed.period; // "A" or "P"
     const timeWithoutPeriod = displayPeriod ? value.slice(0, -1) : value;
@@ -201,34 +202,49 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
       setTimeout(() => hoursRef.current?.focus(), 0);
     };
 
-    return (
-      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
-        <span
-          tabIndex={0}
-          className="cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors"
-          onClick={handleOpenEditor}
-          onFocus={handleOpenEditor}
-        >
-          {timeWithoutPeriod}
-        </span>
-        {displayPeriod && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              const next = displayPeriod === 'A' ? 'P' : 'A';
-              setPeriod(next);
-              const newValue = timeWithoutPeriod + next;
-              lastEmittedRef.current = newValue;
-              onChange(newValue);
-            }}
-            className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-            tabIndex={-1}
+    // Separate A/P pill toggle (for call times modals)
+    if (showPeriodPill) {
+      return (
+        <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+          <span
+            tabIndex={0}
+            className="cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors"
+            onClick={handleOpenEditor}
+            onFocus={handleOpenEditor}
           >
-            {displayPeriod}
-          </button>
-        )}
+            {timeWithoutPeriod}
+          </span>
+          {displayPeriod && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const next = displayPeriod === 'A' ? 'P' : 'A';
+                setPeriod(next);
+                const newValue = timeWithoutPeriod + next;
+                lastEmittedRef.current = newValue;
+                onChange(newValue);
+              }}
+              className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+              tabIndex={-1}
+            >
+              {displayPeriod}
+            </button>
+          )}
+        </span>
+      );
+    }
+
+    // Plain text display — clicking anywhere opens the full editor
+    return (
+      <span
+        tabIndex={0}
+        className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
+        onClick={handleOpenEditor}
+        onFocus={handleOpenEditor}
+      >
+        {value}
       </span>
     );
   }

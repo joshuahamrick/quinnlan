@@ -627,6 +627,7 @@ export default function InfoGrid() {
                   onChange={(v) => updateCallTime(ct.id, { time: v })}
                   placeholder="Time (e.g. 7:30A)"
                   className="w-28 text-sm font-semibold"
+                  showPeriodPill
                 />
                 <input
                   type="text"
@@ -719,6 +720,7 @@ export default function InfoGrid() {
                     onChange={(v) => updateTalentCall(tc.id, { time: v })}
                     placeholder="Time"
                     className="w-28 text-sm font-semibold"
+                    showPeriodPill
                   />
                   <button
                     onClick={() => removeTalentCall(tc.id)}
@@ -758,6 +760,7 @@ export default function InfoGrid() {
                 onChange={(v) => updateBgCall(bc.id, { time: v })}
                 placeholder="Time"
                 className="w-28 text-sm font-semibold"
+                showPeriodPill
               />
               <button
                 onClick={() => removeBgCall(bc.id)}
