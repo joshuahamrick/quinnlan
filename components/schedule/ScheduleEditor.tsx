@@ -11,7 +11,6 @@ import InfoGrid from './InfoGrid';
 import VersionBar from './VersionBar';
 import QuickRefBar from './QuickRefBar';
 import ColumnHeaders from './ColumnHeaders';
-import CrewCallRow from './CrewCallRow';
 import InfoRow from './InfoRow';
 import DayTitleRow from './DayTitleRow';
 import SceneRow from './SceneRow';
@@ -402,7 +401,6 @@ export default function ScheduleEditor() {
       <VersionBar />
       <QuickRefBar />
       <ColumnHeaders />
-      <CrewCallRow />
 
       {/* Pre-schedule rows (including First Shot) */}
       {(() => {

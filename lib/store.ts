@@ -78,9 +78,15 @@ function createDefaultSchedule(): Schedule {
       { id: crypto.randomUUID(), label: 'Setup', time: '' },
     ],
 
-    crewCallLabel: 'General Crew Call + Safety Meeting',
-    crewCallTime: '',
     rows: [
+      {
+        id: crypto.randomUUID(),
+        type: 'info',
+        preSchedule: true,
+        timeStart: '',
+        timeEnd: '',
+        label: 'General Crew Call + Safety Meeting',
+      } as InfoRow,
       {
         id: crypto.randomUUID(),
         type: 'info',
@@ -474,12 +480,33 @@ export const useScheduleStore = create<ScheduleStore>()(
           rows = [firstShotRow, ...rows];
         }
 
+        // Migrate old crewCallTime/crewCallLabel into an InfoRow
+        const hasCrewCallRow = rows.some(
+          (r) => r.type === 'info' && !((r as InfoRow).isFirstShot) && (r as InfoRow).preSchedule && (r as InfoRow).label?.includes('Crew Call')
+        );
+        if (!hasCrewCallRow) {
+          const crewCallRow: InfoRow = {
+            id: crypto.randomUUID(),
+            type: 'info',
+            preSchedule: true,
+            timeStart: (persistedAny?.crewCallTime as string) || '',
+            timeEnd: '',
+            label: (persistedAny?.crewCallLabel as string) || 'General Crew Call + Safety Meeting',
+          };
+          // Insert before the First Shot row
+          const firstShotIdx = rows.findIndex((r) => r.type === 'info' && (r as InfoRow).isFirstShot);
+          if (firstShotIdx !== -1) {
+            rows = [...rows.slice(0, firstShotIdx), crewCallRow, ...rows.slice(firstShotIdx)];
+          } else {
+            rows = [crewCallRow, ...rows];
+          }
+        }
+
         const schedule = {
           ...currentState.schedule,
           ...persisted.schedule,
           rows,
           quickRefEntries: persisted.schedule?.quickRefEntries || currentState.schedule.quickRefEntries,
-          crewCallLabel: persisted.schedule?.crewCallLabel || currentState.schedule.crewCallLabel,
           fontFamily: persisted.schedule?.fontFamily || currentState.schedule.fontFamily,
           logoScale: persisted.schedule?.logoScale ?? currentState.schedule.logoScale,
           hospitalDepartment: persisted.schedule?.hospitalDepartment ?? currentState.schedule.hospitalDepartment,
@@ -495,6 +522,8 @@ export const useScheduleStore = create<ScheduleStore>()(
         // Remove old fields that are no longer on the Schedule type
         delete (schedule as unknown as Record<string, unknown>).firstShotTime;
         delete (schedule as unknown as Record<string, unknown>).firstShotLabel;
+        delete (schedule as unknown as Record<string, unknown>).crewCallTime;
+        delete (schedule as unknown as Record<string, unknown>).crewCallLabel;
 
         return {
           ...currentState,

@@ -14,8 +14,8 @@ export default function InfoRow({ row }: { row: InfoRowType }) {
 
   return (
     <div data-schedule-row className="grid grid-cols-[10%_90%] border border-gray-300 border-t-0 text-xs group/info relative">
-      <div className="border-r border-gray-300 px-2 py-1 font-semibold">
-        <div className="flex items-center gap-1">
+      <div className="border-r border-gray-300 px-2 py-1 font-semibold flex items-center justify-center">
+        <div className="flex items-center justify-center gap-1">
           <TimeInput
             value={row.timeStart}
             onChange={(v) => updateRow(row.id, { timeStart: v })}
@@ -37,12 +37,16 @@ export default function InfoRow({ row }: { row: InfoRowType }) {
       </div>
       <div className="px-2 py-1 font-semibold flex items-center">
         <div className="flex-1">
-          <EditableText
-            value={row.label}
-            onChange={(v) => updateRow(row.id, { label: v })}
-            placeholder="Label"
-            className="text-[11px] font-semibold"
-          />
+          {row.isFirstShot ? (
+            <span className="text-[11px] font-semibold">First Shot</span>
+          ) : (
+            <EditableText
+              value={row.label}
+              onChange={(v) => updateRow(row.id, { label: v })}
+              placeholder="Label"
+              className="text-[11px] font-semibold"
+            />
+          )}
         </div>
         {!row.isFirstShot && (
           <button

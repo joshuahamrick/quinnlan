@@ -52,8 +52,6 @@ export interface Schedule {
   quickRefEntries: QuickRefEntry[];
 
   // Schedule body
-  crewCallLabel: string;
-  crewCallTime: string;
   rows: ScheduleRow[];
 }
 
