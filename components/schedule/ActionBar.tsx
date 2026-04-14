@@ -163,7 +163,7 @@ export default function ActionBar({ row, startTimeReadOnly }: ActionBarProps) {
       {/* Delete */}
       <button
         onClick={() => removeRow(row.id)}
-        className="absolute right-0.5 top-0.5 text-white/60 hover:text-white text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white shadow-sm border border-gray-200 hover:bg-rose-50 hover:border-rose-300 text-gray-400 hover:text-rose-500 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
         data-export-hide
       >
         x
