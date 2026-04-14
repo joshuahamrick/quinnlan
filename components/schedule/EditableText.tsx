@@ -127,6 +127,33 @@ export default function EditableText({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       cancel();
+    } else if (e.key === 'Backspace' && multiline) {
+      // Remove bullet prefix when backspacing on an empty bullet line
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      const range = selection.getRangeAt(0);
+      let node: Node | null = range.startContainer;
+      while (node && node.parentNode !== editableRef.current) {
+        node = node.parentNode;
+      }
+
+      if (node) {
+        const text = node.textContent || '';
+        if (text === '• ' || text === '•') {
+          e.preventDefault();
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            (node as HTMLElement).textContent = '';
+          } else {
+            node.textContent = '';
+          }
+          const newRange = document.createRange();
+          newRange.setStart(node.firstChild || node, 0);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      }
     } else if (e.key === 'Enter' && !multiline) {
       save();
     } else if (e.key === 'Enter' && multiline && !e.shiftKey) {

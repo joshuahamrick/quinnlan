@@ -36,6 +36,22 @@ export function FormattingProvider({ children }: { children: React.ReactNode }) 
     } else if (type === 'italic') {
       document.execCommand('italic');
     } else if (type === 'bullet') {
+      // Handle empty or blank editable — insert a bullet div and place cursor
+      if (editable.innerHTML === '' || editable.innerHTML === '<br>') {
+        editable.innerHTML = '<div>• </div>';
+        const sel = window.getSelection();
+        const textNode = editable.querySelector('div')?.firstChild;
+        if (textNode && sel) {
+          const newRange = document.createRange();
+          newRange.setStart(textNode, 2); // after "• "
+          newRange.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(newRange);
+        }
+        editable.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+      }
+
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
 
