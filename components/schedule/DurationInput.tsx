@@ -91,7 +91,12 @@ export default function DurationInput({ value, onChange, placeholder, className 
   };
 
   const handleHoursKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Tab' && !e.shiftKey) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      emit(hours, minutes);
+      setFocused(false);
+      (document.activeElement as HTMLElement)?.blur();
+    } else if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault();
       minutesRef.current?.focus();
     } else if (e.key === 'Escape') {
@@ -100,7 +105,12 @@ export default function DurationInput({ value, onChange, placeholder, className 
   };
 
   const handleMinutesKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Tab' && e.shiftKey) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      emit(hours, minutes);
+      setFocused(false);
+      (document.activeElement as HTMLElement)?.blur();
+    } else if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault();
       hoursRef.current?.focus();
     } else if (e.key === 'Escape') {
@@ -122,7 +132,7 @@ export default function DurationInput({ value, onChange, placeholder, className 
   if (!focused && !hasValue) {
     return (
       <span
-        tabIndex={0}
+        tabIndex={-1}
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
         onClick={() => {
           setFocused(true);
@@ -142,7 +152,7 @@ export default function DurationInput({ value, onChange, placeholder, className 
   if (!focused && hasValue) {
     return (
       <span
-        tabIndex={0}
+        tabIndex={-1}
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
         onClick={() => {
           setFocused(true);

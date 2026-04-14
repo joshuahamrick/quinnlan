@@ -113,7 +113,12 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   };
 
   const handleHoursKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Tab' && !e.shiftKey) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      emit(hours, minutes, period || 'A');
+      setFocused(false);
+      (document.activeElement as HTMLElement)?.blur();
+    } else if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault();
       minutesRef.current?.focus();
     } else if (e.key === 'Escape') {
@@ -122,7 +127,12 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   };
 
   const handleMinutesKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Tab' && !e.shiftKey) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      emit(hours, minutes, period || 'A');
+      setFocused(false);
+      (document.activeElement as HTMLElement)?.blur();
+    } else if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault();
       periodRef.current?.focus();
     } else if (e.key === 'Tab' && e.shiftKey) {
@@ -142,12 +152,20 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
       e.preventDefault();
       setPeriod('P');
       emit(hours, minutes, 'P');
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      emit(hours, minutes, period || 'A');
+      setFocused(false);
+      (document.activeElement as HTMLElement)?.blur();
     } else if (e.key === 'Tab' && !e.shiftKey && nextInputId) {
       e.preventDefault();
       const target = document.getElementById(nextInputId);
       if (target) {
         target.focus();
       }
+    } else if (e.key === 'Tab' && !e.shiftKey && !nextInputId) {
+      e.preventDefault();
+      (document.activeElement as HTMLElement)?.blur();
     } else if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault();
       minutesRef.current?.focus();
