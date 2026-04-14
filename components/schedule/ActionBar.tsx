@@ -146,7 +146,7 @@ export default function ActionBar({ row, startTimeReadOnly }: ActionBarProps) {
         </div>
 
         {/* Allow - right, fixed width matching left */}
-        <div className="w-[100px] shrink-0 text-right">
+        <div className="w-[100px] shrink-0 flex justify-end">
           <DurationInput
             value={row.allowTime}
             onChange={(v) => {
