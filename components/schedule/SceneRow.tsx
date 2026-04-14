@@ -7,6 +7,7 @@ import { calculateDuration } from '@/lib/time-utils';
 import type { SceneRow as SceneRowType } from '@/lib/types';
 import EditableText from './EditableText';
 import TimeInput from './TimeInput';
+import DurationInput from './DurationInput';
 
 interface SceneRowProps {
   row: SceneRowType;
@@ -154,11 +155,11 @@ export default function SceneRow({ row }: SceneRowProps) {
 
       {/* Allow */}
       <div className="px-2 py-1 flex flex-col justify-center items-center text-center">
-        <EditableText
+        <DurationInput
           value={row.allowTime}
           onChange={(v) => updateRow(row.id, { allowTime: v })}
           placeholder="Time"
-          className="text-[11px] [&_input]:text-center"
+          className="text-[11px]"
         />
       </div>
 

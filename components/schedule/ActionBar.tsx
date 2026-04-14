@@ -7,6 +7,7 @@ import { extractColorsFromImage } from '@/lib/colors';
 import type { ActionBarRow } from '@/lib/types';
 import EditableText from './EditableText';
 import TimeInput from './TimeInput';
+import DurationInput from './DurationInput';
 
 const PRESET_COLORS = [
   '#1a1a2e', '#16213e', '#0f3460', '#533483',
@@ -139,11 +140,12 @@ export default function ActionBar({ row }: ActionBarProps) {
 
         {/* Allow - right, fixed width matching left */}
         <div className="w-[100px] shrink-0 text-right">
-          <EditableText
+          <DurationInput
             value={row.allowTime}
             onChange={(v) => updateRow(row.id, { allowTime: v })}
             placeholder="Time"
-            className="text-white text-[11px] [&_span]:text-white/60 [&_input]:text-right"
+            className="text-white text-[11px]"
+            variant="dark"
           />
         </div>
       </div>
