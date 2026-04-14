@@ -79,6 +79,8 @@ function createDefaultSchedule(): Schedule {
 
     crewCallLabel: 'General Crew Call + Safety Meeting',
     crewCallTime: '',
+    firstShotTime: '',
+    firstShotLabel: 'First Shot',
     rows: [
       {
         id: crypto.randomUUID(),
@@ -446,6 +448,8 @@ export const useScheduleStore = create<ScheduleStore>()(
           ...persisted.schedule,
           quickRefEntries: persisted.schedule?.quickRefEntries || currentState.schedule.quickRefEntries,
           crewCallLabel: persisted.schedule?.crewCallLabel || currentState.schedule.crewCallLabel,
+          firstShotTime: persisted.schedule?.firstShotTime ?? currentState.schedule.firstShotTime,
+          firstShotLabel: persisted.schedule?.firstShotLabel || currentState.schedule.firstShotLabel,
           fontFamily: persisted.schedule?.fontFamily || currentState.schedule.fontFamily,
           logoScale: persisted.schedule?.logoScale ?? currentState.schedule.logoScale,
           hospitalDepartment: persisted.schedule?.hospitalDepartment ?? currentState.schedule.hospitalDepartment,

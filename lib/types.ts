@@ -54,6 +54,8 @@ export interface Schedule {
   // Schedule body
   crewCallLabel: string;
   crewCallTime: string;
+  firstShotTime: string;
+  firstShotLabel: string;
   rows: ScheduleRow[];
 }
 

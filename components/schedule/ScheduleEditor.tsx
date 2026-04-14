@@ -11,6 +11,7 @@ import VersionBar from './VersionBar';
 import QuickRefBar from './QuickRefBar';
 import ColumnHeaders from './ColumnHeaders';
 import CrewCallRow from './CrewCallRow';
+import FirstShotRow from './FirstShotRow';
 import DayTitleRow from './DayTitleRow';
 import SceneRow from './SceneRow';
 import ActionBar from './ActionBar';
@@ -143,6 +144,7 @@ export default function ScheduleEditor() {
       <QuickRefBar />
       <ColumnHeaders />
       <CrewCallRow />
+      <FirstShotRow />
       <DayTitleRow />
 
       {(() => {
