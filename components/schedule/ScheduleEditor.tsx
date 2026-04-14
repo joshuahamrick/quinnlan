@@ -17,6 +17,120 @@ import DayTitleRow from './DayTitleRow';
 import SceneRow from './SceneRow';
 import ActionBar from './ActionBar';
 
+function InsertMenu({
+  menuId,
+  insertMenuId,
+  setInsertMenuId,
+  onScene,
+  onAction,
+}: {
+  menuId: string;
+  insertMenuId: string | null;
+  setInsertMenuId: (id: string | null) => void;
+  onScene: () => void;
+  onAction: () => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const isOpen = insertMenuId === menuId;
+  const [showAbove, setShowAbove] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setShowAbove(window.innerHeight - rect.bottom < 100);
+    }
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={() => setInsertMenuId(isOpen ? null : menuId)}
+        className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow"
+      >
+        +
+      </button>
+      {isOpen && (
+        <div
+          className={`absolute left-1/2 -translate-x-1/2 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap ${
+            showAbove ? 'bottom-8' : 'top-6'
+          }`}
+        >
+          <button
+            onClick={onScene}
+            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+          >
+            Strip
+          </button>
+          <button
+            onClick={onAction}
+            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+          >
+            Banner
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function InsertMenuLarge({
+  menuId,
+  insertMenuId,
+  setInsertMenuId,
+  onScene,
+  onAction,
+}: {
+  menuId: string;
+  insertMenuId: string | null;
+  setInsertMenuId: (id: string | null) => void;
+  onScene: () => void;
+  onAction: () => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const isOpen = insertMenuId === menuId;
+  const [showAbove, setShowAbove] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setShowAbove(window.innerHeight - rect.bottom < 100);
+    }
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={() => setInsertMenuId(isOpen ? null : menuId)}
+        className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center shadow"
+      >
+        +
+      </button>
+      {isOpen && (
+        <div
+          className={`absolute bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap ${
+            showAbove ? 'bottom-10' : 'top-10'
+          }`}
+        >
+          <button
+            onClick={onScene}
+            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+          >
+            Strip
+          </button>
+          <button
+            onClick={onAction}
+            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+          >
+            Banner
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function ScheduleEditor() {
   useWeatherSync();
   useHospitalSync();
@@ -276,30 +390,13 @@ export default function ScheduleEditor() {
                   {/* Insert button between pre-rows */}
                   <div className="relative h-0 group/insert">
                     <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
-                      <button
-                        onClick={() =>
-                          setInsertMenuId(insertMenuId === `pre-${row.id}` ? null : `pre-${row.id}`)
-                        }
-                        className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow"
-                      >
-                        +
-                      </button>
-                      {insertMenuId === `pre-${row.id}` && (
-                        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap">
-                          <button
-                            onClick={() => handleInsertPreRow(row.id, 'scene')}
-                            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                          >
-                            Strip
-                          </button>
-                          <button
-                            onClick={() => handleInsertPreRow(row.id, 'action')}
-                            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                          >
-                            Banner
-                          </button>
-                        </div>
-                      )}
+                      <InsertMenu
+                        menuId={`pre-${row.id}`}
+                        insertMenuId={insertMenuId}
+                        setInsertMenuId={setInsertMenuId}
+                        onScene={() => handleInsertPreRow(row.id, 'scene')}
+                        onAction={() => handleInsertPreRow(row.id, 'action')}
+                      />
                     </div>
                   </div>
                 </div>
@@ -313,30 +410,13 @@ export default function ScheduleEditor() {
               onDragOver={(e) => handleDragOver(e, preRows.length, 'pre')}
               onDrop={handleDrop}
             >
-              <button
-                onClick={() =>
-                  setInsertMenuId(insertMenuId === '__pre-end' ? null : '__pre-end')
-                }
-                className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center shadow"
-              >
-                +
-              </button>
-              {insertMenuId === '__pre-end' && (
-                <div className="absolute top-10 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap">
-                  <button
-                    onClick={() => handleAddPreRow('scene')}
-                    className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                  >
-                    Strip
-                  </button>
-                  <button
-                    onClick={() => handleAddPreRow('action')}
-                    className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                  >
-                    Banner
-                  </button>
-                </div>
-              )}
+              <InsertMenuLarge
+                menuId="__pre-end"
+                insertMenuId={insertMenuId}
+                setInsertMenuId={setInsertMenuId}
+                onScene={() => handleAddPreRow('scene')}
+                onAction={() => handleAddPreRow('action')}
+              />
             </div>
           </>
         );
@@ -397,30 +477,13 @@ export default function ScheduleEditor() {
                   {/* Insert button between rows */}
                   <div className="relative h-0 group/insert">
                     <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
-                      <button
-                        onClick={() =>
-                          setInsertMenuId(insertMenuId === row.id ? null : row.id)
-                        }
-                        className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow"
-                      >
-                        +
-                      </button>
-                      {insertMenuId === row.id && (
-                        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap">
-                          <button
-                            onClick={() => handleInsert(row.id, 'scene')}
-                            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                          >
-                            Strip
-                          </button>
-                          <button
-                            onClick={() => handleInsert(row.id, 'action')}
-                            className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                          >
-                            Banner
-                          </button>
-                        </div>
-                      )}
+                      <InsertMenu
+                        menuId={row.id}
+                        insertMenuId={insertMenuId}
+                        setInsertMenuId={setInsertMenuId}
+                        onScene={() => handleInsert(row.id, 'scene')}
+                        onAction={() => handleInsert(row.id, 'action')}
+                      />
                     </div>
                   </div>
                 </div>
@@ -434,30 +497,13 @@ export default function ScheduleEditor() {
               onDragOver={(e) => handleDragOver(e, regularRows.length, 'main')}
               onDrop={handleDrop}
             >
-              <button
-                onClick={() =>
-                  setInsertMenuId(insertMenuId === '__end' ? null : '__end')
-                }
-                className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center shadow"
-              >
-                +
-              </button>
-              {insertMenuId === '__end' && (
-                <div className="absolute top-10 bg-white border border-gray-300 rounded shadow-lg z-20 whitespace-nowrap">
-                  <button
-                    onClick={() => handleAddToEnd('scene')}
-                    className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                  >
-                    Strip
-                  </button>
-                  <button
-                    onClick={() => handleAddToEnd('action')}
-                    className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
-                  >
-                    Banner
-                  </button>
-                </div>
-              )}
+              <InsertMenuLarge
+                menuId="__end"
+                insertMenuId={insertMenuId}
+                setInsertMenuId={setInsertMenuId}
+                onScene={() => handleAddToEnd('scene')}
+                onAction={() => handleAddToEnd('action')}
+              />
             </div>
 
             {/* Terminal rows (wrap + taillights) always at bottom */}
