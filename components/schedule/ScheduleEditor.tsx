@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useScheduleStore } from '@/lib/store';
-import { calculateDuration } from '@/lib/time-utils';
+import { calculateDuration, calculateEndTime } from '@/lib/time-utils';
 import type { SceneRow as SceneRowType, ActionBarRow, ActionBarType } from '@/lib/types';
 import { useWeatherSync } from '@/lib/useWeatherSync';
 import { useHospitalSync } from '@/lib/useHospitalSync';
@@ -26,6 +26,8 @@ export default function ScheduleEditor() {
   const [previewOrder, setPreviewOrder] = useState<string[] | null>(null);
   const wasDragging = useRef(false);
 
+  const cascadingRef = useRef(false);
+
   // Sync First Shot time → first scene row's start time
   useEffect(() => {
     const firstScene = schedule.rows.find((r): r is SceneRowType => r.type === 'scene');
@@ -37,6 +39,52 @@ export default function ScheduleEditor() {
       });
     }
   }, [schedule.firstShotTime, schedule.rows, updateRow]);
+
+  // Cascade times: each row's start time = previous row's end time
+  useEffect(() => {
+    if (cascadingRef.current) return;
+
+    const rows = schedule.rows;
+    // Only cascade regular rows (not wrap/taillights)
+    const regularRows = rows.filter(
+      (r) =>
+        r.type !== 'action' ||
+        ((r as ActionBarRow).actionType !== 'wrap' &&
+          (r as ActionBarRow).actionType !== 'taillights')
+    );
+
+    const updates: { id: string; timeStart?: string; timeEnd?: string }[] = [];
+
+    for (let i = 1; i < regularRows.length; i++) {
+      const prev = regularRows[i - 1];
+      const curr = regularRows[i];
+      const prevEnd = prev.timeEnd;
+
+      if (prevEnd && curr.timeStart !== prevEnd) {
+        const update: { id: string; timeStart?: string; timeEnd?: string } = {
+          id: curr.id,
+          timeStart: prevEnd,
+        };
+        // Recalculate end time if allow time exists
+        if (curr.allowTime) {
+          const newEnd = calculateEndTime(prevEnd, curr.allowTime);
+          if (newEnd) {
+            update.timeEnd = newEnd;
+          }
+        }
+        updates.push(update);
+        // Update the local copy so subsequent iterations chain correctly
+        regularRows[i] = { ...regularRows[i], timeStart: prevEnd, ...(update.timeEnd ? { timeEnd: update.timeEnd } : {}) };
+      }
+    }
+
+    if (updates.length > 0) {
+      cascadingRef.current = true;
+      updates.forEach(({ id, ...fields }) => updateRow(id, fields));
+      // Reset on next tick so the triggered re-render's effect can run if needed
+      setTimeout(() => { cascadingRef.current = false; }, 0);
+    }
+  }, [schedule.rows, updateRow]);
 
   const handleDragStart = useCallback((e: React.DragEvent, rowId: string, regularRows: { id: string }[]) => {
     // Don't drag if the target is an interactive element
@@ -174,7 +222,6 @@ export default function ScheduleEditor() {
               (r as ActionBarRow).actionType === 'taillights')
         );
 
-        const firstSceneId = regularRows.find(r => r.type === 'scene')?.id;
         const displayRows = previewOrder
           ? previewOrder.map(id => regularRows.find(r => r.id === id)!).filter(Boolean)
           : regularRows;
@@ -201,9 +248,9 @@ export default function ScheduleEditor() {
                     data-export-hide={isDragged ? true : undefined}
                   >
                     {row.type === 'scene' ? (
-                      <SceneRow row={row as SceneRowType} startTimeReadOnly={row.id === firstSceneId} />
+                      <SceneRow row={row as SceneRowType} startTimeReadOnly />
                     ) : (
-                      <ActionBar row={row as ActionBarRow} />
+                      <ActionBar row={row as ActionBarRow} startTimeReadOnly />
                     )}
                   </div>
 

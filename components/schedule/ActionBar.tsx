@@ -18,9 +18,10 @@ const PRESET_COLORS = [
 
 interface ActionBarProps {
   row: ActionBarRow;
+  startTimeReadOnly?: boolean;
 }
 
-export default function ActionBar({ row }: ActionBarProps) {
+export default function ActionBar({ row, startTimeReadOnly }: ActionBarProps) {
   const { schedule, updateRow, removeRow } = useScheduleStore();
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [extractedColors, setExtractedColors] = useState<string[]>([]);
@@ -102,18 +103,24 @@ export default function ActionBar({ row }: ActionBarProps) {
       <div className="flex items-center px-2 py-1">
         {/* Time range - left, fixed width */}
         <div className="w-[100px] shrink-0 flex items-center">
-          <TimeInput
-            value={row.timeStart}
-            onChange={(v) => {
-              const duration = calculateDuration(v, row.timeEnd);
-              updateRow(row.id, { timeStart: v, ...(duration ? { allowTime: duration } : {}) });
-            }}
-            placeholder="Start"
-            className="text-white text-[11px] [&_span]:text-white/60"
-            id={`start-${row.id}`}
-            nextInputId={`end-${row.id}`}
-            variant="dark"
-          />
+          {startTimeReadOnly ? (
+            <span className="text-white text-[11px]">
+              {row.timeStart || <span className="text-white/60">Start</span>}
+            </span>
+          ) : (
+            <TimeInput
+              value={row.timeStart}
+              onChange={(v) => {
+                const duration = calculateDuration(v, row.timeEnd);
+                updateRow(row.id, { timeStart: v, ...(duration ? { allowTime: duration } : {}) });
+              }}
+              placeholder="Start"
+              className="text-white text-[11px] [&_span]:text-white/60"
+              id={`start-${row.id}`}
+              nextInputId={`end-${row.id}`}
+              variant="dark"
+            />
+          )}
           {(row.timeStart || row.timeEnd) && <span className="mx-0.5">-</span>}
           <TimeInput
             value={row.timeEnd}

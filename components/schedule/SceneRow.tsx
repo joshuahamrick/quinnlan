@@ -56,7 +56,7 @@ export default function SceneRow({ row, startTimeReadOnly }: SceneRowProps) {
       {/* Time */}
       <div className="border-r border-gray-300 px-2 py-1 flex flex-col justify-center">
         {startTimeReadOnly ? (
-          <div className="text-[11px] font-semibold text-center text-black" title="Linked to First Shot">
+          <div className="text-[11px] font-semibold text-center text-black">
             {row.timeStart || <span className="text-gray-400">Start</span>}
           </div>
         ) : (
