@@ -54,8 +54,6 @@ export interface Schedule {
   // Schedule body
   crewCallLabel: string;
   crewCallTime: string;
-  firstShotTime: string;
-  firstShotLabel: string;
   rows: ScheduleRow[];
 }
 
@@ -96,7 +94,17 @@ export interface QuickRefEntry {
   time: string;
 }
 
-export type ScheduleRow = SceneRow | ActionBarRow;
+export interface InfoRow {
+  id: string;
+  type: 'info';
+  preSchedule: true;
+  timeStart: string;
+  timeEnd: string;
+  label: string;
+  isFirstShot?: boolean;
+}
+
+export type ScheduleRow = SceneRow | ActionBarRow | InfoRow;
 
 export interface SceneRow {
   id: string;

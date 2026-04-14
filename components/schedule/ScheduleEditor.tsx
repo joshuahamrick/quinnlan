@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useScheduleStore } from '@/lib/store';
 import { calculateDuration, calculateEndTime } from '@/lib/time-utils';
-import type { SceneRow as SceneRowType, ActionBarRow, ActionBarType } from '@/lib/types';
+import type { SceneRow as SceneRowType, ActionBarRow, ActionBarType, InfoRow as InfoRowType } from '@/lib/types';
 import { useWeatherSync } from '@/lib/useWeatherSync';
 import { useHospitalSync } from '@/lib/useHospitalSync';
 import HeaderBar from './HeaderBar';
@@ -12,7 +12,7 @@ import VersionBar from './VersionBar';
 import QuickRefBar from './QuickRefBar';
 import ColumnHeaders from './ColumnHeaders';
 import CrewCallRow from './CrewCallRow';
-import FirstShotRow from './FirstShotRow';
+import InfoRow from './InfoRow';
 import DayTitleRow from './DayTitleRow';
 import SceneRow from './SceneRow';
 import ActionBar from './ActionBar';
@@ -23,12 +23,14 @@ function InsertMenu({
   setInsertMenuId,
   onScene,
   onAction,
+  onInfo,
 }: {
   menuId: string;
   insertMenuId: string | null;
   setInsertMenuId: (id: string | null) => void;
   onScene: () => void;
   onAction: () => void;
+  onInfo?: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
   const isOpen = insertMenuId === menuId;
@@ -68,6 +70,14 @@ function InsertMenu({
           >
             Banner
           </button>
+          {onInfo && (
+            <button
+              onClick={onInfo}
+              className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+            >
+              Row
+            </button>
+          )}
         </div>
       )}
     </>
@@ -80,12 +90,14 @@ function InsertMenuLarge({
   setInsertMenuId,
   onScene,
   onAction,
+  onInfo,
 }: {
   menuId: string;
   insertMenuId: string | null;
   setInsertMenuId: (id: string | null) => void;
   onScene: () => void;
   onAction: () => void;
+  onInfo?: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
   const isOpen = insertMenuId === menuId;
@@ -125,6 +137,14 @@ function InsertMenuLarge({
           >
             Banner
           </button>
+          {onInfo && (
+            <button
+              onClick={onInfo}
+              className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left"
+            >
+              Row
+            </button>
+          )}
         </div>
       )}
     </>
@@ -143,27 +163,30 @@ export default function ScheduleEditor() {
 
   // Sync First Shot time → first scene row's start time
   useEffect(() => {
+    const firstShotRow = schedule.rows.find((r): r is InfoRowType => r.type === 'info' && !!r.isFirstShot);
+    const firstShotTime = firstShotRow?.timeStart || '';
     const firstScene = schedule.rows.find((r): r is SceneRowType => r.type === 'scene' && !r.preSchedule);
-    if (firstScene && schedule.firstShotTime && firstScene.timeStart !== schedule.firstShotTime) {
+    if (firstScene && firstShotTime && firstScene.timeStart !== firstShotTime) {
       const newEnd = firstScene.allowTime
-        ? calculateEndTime(schedule.firstShotTime, firstScene.allowTime)
+        ? calculateEndTime(firstShotTime, firstScene.allowTime)
         : firstScene.timeEnd || '';
       updateRow(firstScene.id, {
-        timeStart: schedule.firstShotTime,
+        timeStart: firstShotTime,
         ...(newEnd ? { timeEnd: newEnd } : {}),
       });
     }
-  }, [schedule.firstShotTime, schedule.rows, updateRow]);
+  }, [schedule.rows, updateRow]);
 
   // Cascade times: each row's start time = previous row's end time
   useEffect(() => {
     const rows = schedule.rows;
-    // Only cascade regular rows (not wrap/taillights)
+    // Only cascade regular rows (not wrap/taillights/info)
     const regular = rows.filter(
-      (r) =>
-        r.type !== 'action' ||
+      (r): r is SceneRowType | ActionBarRow =>
+        r.type !== 'info' &&
+        (r.type !== 'action' ||
         ((r as ActionBarRow).actionType !== 'wrap' &&
-          (r as ActionBarRow).actionType !== 'taillights')
+          (r as ActionBarRow).actionType !== 'taillights'))
     );
 
     const firstSceneId = regular.find((r) => r.type === 'scene' && !r.preSchedule)?.id;
@@ -179,7 +202,8 @@ export default function ScheduleEditor() {
       // For rows after the first, start time should match previous end
       if (i > 0 && prevEnd) {
         // Don't override the first scene's start — First Shot sync owns it
-        if (curr.id === firstSceneId && schedule.firstShotTime) {
+        const fsRow = schedule.rows.find((r) => r.type === 'info' && (r as InfoRowType).isFirstShot) as InfoRowType | undefined;
+        if (curr.id === firstSceneId && fsRow?.timeStart) {
           currentStart = curr.timeStart;
         } else if (curr.timeStart !== prevEnd) {
           changes.timeStart = prevEnd;
@@ -326,6 +350,15 @@ export default function ScheduleEditor() {
     preSchedule,
   });
 
+  const createInfoRow = (): InfoRowType => ({
+    id: crypto.randomUUID(),
+    type: 'info',
+    preSchedule: true,
+    timeStart: '',
+    timeEnd: '',
+    label: '',
+  });
+
   const handleInsert = (afterId: string, type: 'scene' | 'action') => {
     const row = type === 'scene' ? createSceneRow() : createActionRow();
     insertRowAfter(afterId, row);
@@ -338,14 +371,14 @@ export default function ScheduleEditor() {
     setInsertMenuId(null);
   };
 
-  const handleInsertPreRow = (afterId: string, type: 'scene' | 'action') => {
-    const row = type === 'scene' ? createSceneRow(true) : createActionRow(true);
+  const handleInsertPreRow = (afterId: string, type: 'scene' | 'action' | 'info') => {
+    const row = type === 'scene' ? createSceneRow(true) : type === 'info' ? createInfoRow() : createActionRow(true);
     insertRowAfter(afterId, row);
     setInsertMenuId(null);
   };
 
-  const handleAddPreRow = (type: 'scene' | 'action') => {
-    const row = type === 'scene' ? createSceneRow(true) : createActionRow(true);
+  const handleAddPreRow = (type: 'scene' | 'action' | 'info') => {
+    const row = type === 'scene' ? createSceneRow(true) : type === 'info' ? createInfoRow() : createActionRow(true);
     const preRows = schedule.rows.filter(r => r.preSchedule);
     if (preRows.length > 0) {
       insertRowAfter(preRows[preRows.length - 1].id, row);
@@ -370,9 +403,8 @@ export default function ScheduleEditor() {
       <QuickRefBar />
       <ColumnHeaders />
       <CrewCallRow />
-      <FirstShotRow />
 
-      {/* Pre-schedule rows (between First Shot and Day Title) */}
+      {/* Pre-schedule rows (including First Shot) */}
       {(() => {
         const preRows = schedule.rows.filter(r => r.preSchedule);
         const displayPreRows = dragSection === 'pre' && previewOrder
@@ -402,6 +434,8 @@ export default function ScheduleEditor() {
                   >
                     {row.type === 'scene' ? (
                       <SceneRow row={row as SceneRowType} startTimeReadOnly={false} />
+                    ) : row.type === 'info' ? (
+                      <InfoRow row={row as InfoRowType} />
                     ) : (
                       <ActionBar row={row as ActionBarRow} />
                     )}
@@ -416,6 +450,7 @@ export default function ScheduleEditor() {
                         setInsertMenuId={setInsertMenuId}
                         onScene={() => handleInsertPreRow(row.id, 'scene')}
                         onAction={() => handleInsertPreRow(row.id, 'action')}
+                        onInfo={() => handleInsertPreRow(row.id, 'info')}
                       />
                     </div>
                   </div>
@@ -436,6 +471,7 @@ export default function ScheduleEditor() {
                 setInsertMenuId={setInsertMenuId}
                 onScene={() => handleAddPreRow('scene')}
                 onAction={() => handleAddPreRow('action')}
+                onInfo={() => handleAddPreRow('info')}
               />
             </div>
           </>
