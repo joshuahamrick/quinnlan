@@ -196,36 +196,38 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     const displayPeriod = parsed.period; // "A" or "P"
     const timeWithoutPeriod = displayPeriod ? value.slice(0, -1) : value;
 
+    const handleOpenEditor = () => {
+      setFocused(true);
+      setTimeout(() => hoursRef.current?.focus(), 0);
+    };
+
     return (
-      <span
-        tabIndex={0}
-        className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
-        onClick={() => {
-          setFocused(true);
-          setTimeout(() => hoursRef.current?.focus(), 0);
-        }}
-        onFocus={() => {
-          setFocused(true);
-          setTimeout(() => hoursRef.current?.focus(), 0);
-        }}
-      >
-        {timeWithoutPeriod}
+      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+        <span
+          tabIndex={0}
+          className="cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors"
+          onClick={handleOpenEditor}
+          onFocus={handleOpenEditor}
+        >
+          {timeWithoutPeriod}
+        </span>
         {displayPeriod && (
-          <span
-            role="button"
-            tabIndex={-1}
+          <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
+              e.preventDefault();
               const next = displayPeriod === 'A' ? 'P' : 'A';
               setPeriod(next);
               const newValue = timeWithoutPeriod + next;
               lastEmittedRef.current = newValue;
               onChange(newValue);
             }}
-            className="cursor-pointer hover:text-blue-500 transition-colors rounded"
+            className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+            tabIndex={-1}
           >
             {displayPeriod}
-          </span>
+          </button>
         )}
       </span>
     );
