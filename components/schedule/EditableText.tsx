@@ -143,12 +143,13 @@ export default function EditableText({
         if (text === '• ' || text === '•') {
           e.preventDefault();
           if (node.nodeType === Node.ELEMENT_NODE) {
-            (node as HTMLElement).textContent = '';
+            // Use <br> to keep the empty div alive in contentEditable
+            (node as HTMLElement).innerHTML = '<br>';
           } else {
-            node.textContent = '';
+            node.textContent = '\u200B';
           }
           const newRange = document.createRange();
-          newRange.setStart(node.firstChild || node, 0);
+          newRange.setStart(node, 0);
           newRange.collapse(true);
           selection.removeAllRanges();
           selection.addRange(newRange);
