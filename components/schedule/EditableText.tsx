@@ -134,12 +134,17 @@ export default function EditableText({
 
       const range = selection.getRangeAt(0);
       let node: Node | null = range.startContainer;
-      while (node && node.parentNode !== editableRef.current) {
+      if (node === editableRef.current) {
+        node = editableRef.current.childNodes[range.startOffset] ||
+               editableRef.current.childNodes[range.startOffset - 1] || null;
+      }
+      while (node && node !== editableRef.current && node.parentNode !== editableRef.current) {
         node = node.parentNode;
       }
+      if (node === editableRef.current) node = null;
 
       if (node) {
-        const text = node.textContent || '';
+        const text = (node.textContent || '').replace(/\u200B/g, '');
         if (text === '• ' || text === '•') {
           e.preventDefault();
           if (node.nodeType === Node.ELEMENT_NODE) {
@@ -165,13 +170,20 @@ export default function EditableText({
 
       const range = selection.getRangeAt(0);
       let node: Node | null = range.startContainer;
+      // If the cursor is at the editable container level, pick the child at offset
+      if (node === editableRef.current) {
+        node = editableRef.current.childNodes[range.startOffset] ||
+               editableRef.current.childNodes[range.startOffset - 1] || null;
+      }
       // Walk up to find the immediate child div of the editable container
-      while (node && node.parentNode !== editableRef.current) {
+      while (node && node !== editableRef.current && node.parentNode !== editableRef.current) {
         node = node.parentNode;
       }
+      // If we walked up to the editable itself, that's not a line node
+      if (node === editableRef.current) node = null;
 
       if (node) {
-        const text = node.textContent || '';
+        const text = (node.textContent || '').replace(/\u200B/g, '');
         if (text.startsWith('• ') || text.startsWith('•')) {
           e.preventDefault();
           // Always insert a new bullet line after the current one
@@ -182,7 +194,7 @@ export default function EditableText({
           } else {
             editableRef.current!.appendChild(newDiv);
           }
-          // Place cursor after "• "
+          // Place cursor after "• " using non-breaking space to prevent collapse
           const newRange = document.createRange();
           const textNode = newDiv.firstChild!;
           newRange.setStart(textNode, 2);
