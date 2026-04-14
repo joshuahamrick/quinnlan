@@ -32,10 +32,12 @@ export default function ScheduleEditor() {
   useEffect(() => {
     const firstScene = schedule.rows.find((r): r is SceneRowType => r.type === 'scene');
     if (firstScene && schedule.firstShotTime && firstScene.timeStart !== schedule.firstShotTime) {
-      const duration = firstScene.timeEnd ? calculateDuration(schedule.firstShotTime, firstScene.timeEnd) : '';
+      const newEnd = firstScene.allowTime
+        ? calculateEndTime(schedule.firstShotTime, firstScene.allowTime)
+        : firstScene.timeEnd || '';
       updateRow(firstScene.id, {
         timeStart: schedule.firstShotTime,
-        ...(duration ? { allowTime: duration } : {}),
+        ...(newEnd ? { timeEnd: newEnd } : {}),
       });
     }
   }, [schedule.firstShotTime, schedule.rows, updateRow]);
