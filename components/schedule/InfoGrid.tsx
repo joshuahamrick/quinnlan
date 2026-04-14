@@ -651,6 +651,7 @@ export default function InfoGrid() {
           <button
             onClick={addCallTime}
             className="w-full border border-dashed border-gray-300 rounded-lg py-2 text-sm text-blue-600 hover:bg-blue-50 font-semibold"
+            tabIndex={-1}
           >
             + Add Call Time
           </button>
@@ -736,6 +737,7 @@ export default function InfoGrid() {
           <button
             onClick={addTalentCall}
             className="w-full border border-dashed border-gray-300 rounded-lg py-2 text-sm text-blue-600 hover:bg-blue-50 font-semibold"
+            tabIndex={-1}
           >
             + Add Talent Call
           </button>
@@ -769,6 +771,7 @@ export default function InfoGrid() {
           <button
             onClick={addBgCall}
             className="w-full border border-dashed border-gray-300 rounded-lg py-2 text-sm text-blue-600 hover:bg-blue-50 font-semibold"
+            tabIndex={-1}
           >
             + Add BG Call
           </button>

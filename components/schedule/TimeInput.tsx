@@ -175,8 +175,13 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   if (!focused && !hasValue) {
     return (
       <span
+        tabIndex={0}
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
         onClick={() => {
+          setFocused(true);
+          setTimeout(() => hoursRef.current?.focus(), 0);
+        }}
+        onFocus={() => {
           setFocused(true);
           setTimeout(() => hoursRef.current?.focus(), 0);
         }}
@@ -190,8 +195,13 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   if (!focused && hasValue) {
     return (
       <span
+        tabIndex={0}
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block text-center ${className}`}
         onClick={() => {
+          setFocused(true);
+          setTimeout(() => hoursRef.current?.focus(), 0);
+        }}
+        onFocus={() => {
           setFocused(true);
           setTimeout(() => hoursRef.current?.focus(), 0);
         }}
