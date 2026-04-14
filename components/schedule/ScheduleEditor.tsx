@@ -48,53 +48,51 @@ export default function ScheduleEditor() {
 
     const rows = schedule.rows;
     // Only cascade regular rows (not wrap/taillights)
-    const regularRows = rows.filter(
+    const regular = rows.filter(
       (r) =>
         r.type !== 'action' ||
         ((r as ActionBarRow).actionType !== 'wrap' &&
           (r as ActionBarRow).actionType !== 'taillights')
     );
 
-    const updates: { id: string; timeStart?: string; timeEnd?: string }[] = [];
+    const updates: { id: string; changes: Record<string, string> }[] = [];
+    let prevEnd = ''; // track the running end time through the chain
 
-    for (let i = 1; i < regularRows.length; i++) {
-      const prev = regularRows[i - 1];
-      const curr = regularRows[i];
-      const prevEnd = prev.timeEnd;
+    for (let i = 0; i < regular.length; i++) {
+      const curr = regular[i];
+      const changes: Record<string, string> = {};
+      let currentStart = curr.timeStart;
+      let currentEnd = curr.timeEnd;
 
-      const newStartTime = prevEnd || curr.timeStart;
-      const startChanged = prevEnd && curr.timeStart !== prevEnd;
-
-      // Recalculate end time from start + allow (allow time is always the source of truth)
-      const newEnd = newStartTime && curr.allowTime
-        ? calculateEndTime(newStartTime, curr.allowTime)
-        : '';
-      const endChanged = newEnd && curr.timeEnd !== newEnd;
-
-      if (startChanged || endChanged) {
-        const update: { id: string; timeStart?: string; timeEnd?: string } = {
-          id: curr.id,
-        };
-        if (startChanged) {
-          update.timeStart = prevEnd;
+      // For rows after the first, start time should match previous end
+      if (i > 0 && prevEnd) {
+        if (curr.timeStart !== prevEnd) {
+          changes.timeStart = prevEnd;
+          currentStart = prevEnd;
         }
-        if (endChanged) {
-          update.timeEnd = newEnd;
-        }
-        updates.push(update);
-        // Update the local copy so subsequent iterations chain correctly
-        regularRows[i] = {
-          ...regularRows[i],
-          ...(startChanged ? { timeStart: prevEnd } : {}),
-          ...(endChanged ? { timeEnd: newEnd } : {}),
-        };
       }
+
+      // Always recalculate end from start + allow
+      if (curr.allowTime && currentStart) {
+        const newEnd = calculateEndTime(currentStart, curr.allowTime);
+        if (newEnd && newEnd !== curr.timeEnd) {
+          changes.timeEnd = newEnd;
+          currentEnd = newEnd;
+        }
+      }
+
+      if (Object.keys(changes).length > 0) {
+        updates.push({ id: curr.id, changes });
+      }
+
+      // Use the CALCULATED end time for the next iteration, not the stored one
+      prevEnd = currentEnd;
     }
 
     if (updates.length > 0) {
       cascadingRef.current = true;
-      updates.forEach(({ id, ...fields }) => updateRow(id, fields));
-      // Reset on next tick so the triggered re-render's effect can run if needed
+      updates.forEach((u) => updateRow(u.id, u.changes));
+      // Reset cascading flag after a tick
       setTimeout(() => { cascadingRef.current = false; }, 0);
     }
   }, [schedule.rows, updateRow]);
