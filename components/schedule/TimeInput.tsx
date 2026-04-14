@@ -165,11 +165,11 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
 
   const inputClasses = variant === 'dark'
     ? 'bg-transparent text-white border-white/40 focus:border-white'
-    : 'bg-white text-inherit border-transparent focus:border-blue-400';
+    : 'bg-gray-50/50 text-inherit border-gray-200 focus:border-blue-300 shadow-sm';
 
   const buttonClasses = variant === 'dark'
     ? 'bg-transparent text-white border-white/40 focus:border-white hover:bg-white/10'
-    : 'bg-white text-inherit border-transparent focus:border-blue-400 hover:bg-blue-50';
+    : 'bg-blue-50 text-blue-600 border-transparent focus:border-blue-300 hover:bg-blue-100';
 
   // When not focused and empty, show placeholder
   if (!focused && !hasValue) {
@@ -204,7 +204,7 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
   return (
     <div
       ref={containerRef}
-      className={`inline-flex items-center justify-center gap-0 ${className}`}
+      className={`inline-flex items-center justify-center gap-0.5 ${className}`}
       onBlur={handleBlur}
     >
       <input
@@ -217,10 +217,10 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onFocus={(e) => { handleFocus(); e.target.select(); }}
         onKeyDown={handleHoursKeyDown}
         placeholder="H"
-        className={`w-[1.6em] text-center border rounded-l px-0 py-0.5 outline-none ${inputClasses}`}
+        className={`w-[1.8em] text-center border rounded-lg rounded-r-none px-1 py-1.5 outline-none transition-colors ${inputClasses}`}
         style={{ fontSize: 'inherit' }}
       />
-      <span className="text-inherit select-none" style={{ fontSize: 'inherit' }}>:</span>
+      <span className="text-gray-300 select-none font-light" style={{ fontSize: 'inherit' }}>:</span>
       <input
         ref={minutesRef}
         type="text"
@@ -230,16 +230,17 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
         onFocus={(e) => { handleFocus(); e.target.select(); }}
         onKeyDown={handleMinutesKeyDown}
         placeholder="MM"
-        className={`w-[2em] text-center border px-0 py-0.5 outline-none ${inputClasses}`}
+        className={`w-[2.2em] text-center border px-1 py-1.5 outline-none transition-colors ${inputClasses}`}
         style={{ fontSize: 'inherit' }}
       />
+      <span className="w-0.5" />
       <button
         ref={periodRef}
         type="button"
         onClick={togglePeriod}
         onFocus={() => handleFocus()}
         onKeyDown={handlePeriodKeyDown}
-        className={`w-[1.4em] text-center border rounded-r px-0 py-0.5 outline-none cursor-pointer ${buttonClasses}`}
+        className={`w-[1.6em] text-center rounded-full px-0.5 py-1 outline-none cursor-pointer font-medium transition-colors ${buttonClasses}`}
         style={{ fontSize: 'inherit' }}
       >
         {period || 'A'}

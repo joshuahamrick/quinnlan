@@ -467,6 +467,7 @@ export default function InfoGrid() {
                   <button
                     onClick={() => removeContact(c.id)}
                     className="text-xs text-red-500 hover:text-red-700"
+                    tabIndex={-1}
                   >
                     Remove
                   </button>
@@ -637,6 +638,7 @@ export default function InfoGrid() {
                 <button
                   onClick={() => removeCallTime(ct.id)}
                   className="text-red-500 hover:text-red-700 text-xs shrink-0"
+                  tabIndex={-1}
                 >
                   Remove
                 </button>
@@ -720,6 +722,7 @@ export default function InfoGrid() {
                   <button
                     onClick={() => removeTalentCall(tc.id)}
                     className="text-red-500 hover:text-red-700 text-xs shrink-0"
+                    tabIndex={-1}
                   >
                     Remove
                   </button>
@@ -757,6 +760,7 @@ export default function InfoGrid() {
               <button
                 onClick={() => removeBgCall(bc.id)}
                 className="text-red-500 hover:text-red-700 text-xs shrink-0"
+                tabIndex={-1}
               >
                 Remove
               </button>
