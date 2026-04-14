@@ -237,10 +237,13 @@ export default function ScheduleEditor() {
           ? previewOrder.map(id => regularRows.find(r => r.id === id)!).filter(Boolean)
           : regularRows;
 
+        const firstSceneIndex = displayRows.findIndex(r => r.type === 'scene');
+
         return (
           <>
             {displayRows.map((row, index) => {
               const isDragged = draggedId === row.id;
+              const isFirstScene = row.type === 'scene' && index === firstSceneIndex;
               return (
                 <div key={row.id}>
                   <div
@@ -259,9 +262,9 @@ export default function ScheduleEditor() {
                     data-export-hide={isDragged ? true : undefined}
                   >
                     {row.type === 'scene' ? (
-                      <SceneRow row={row as SceneRowType} startTimeReadOnly />
+                      <SceneRow row={row as SceneRowType} startTimeReadOnly={isFirstScene} />
                     ) : (
-                      <ActionBar row={row as ActionBarRow} startTimeReadOnly />
+                      <ActionBar row={row as ActionBarRow} />
                     )}
                   </div>
 
