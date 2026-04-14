@@ -60,21 +60,32 @@ export default function ScheduleEditor() {
       const curr = regularRows[i];
       const prevEnd = prev.timeEnd;
 
-      if (prevEnd && curr.timeStart !== prevEnd) {
+      const newStartTime = prevEnd || curr.timeStart;
+      const startChanged = prevEnd && curr.timeStart !== prevEnd;
+
+      // Recalculate end time from start + allow (allow time is always the source of truth)
+      const newEnd = newStartTime && curr.allowTime
+        ? calculateEndTime(newStartTime, curr.allowTime)
+        : '';
+      const endChanged = newEnd && curr.timeEnd !== newEnd;
+
+      if (startChanged || endChanged) {
         const update: { id: string; timeStart?: string; timeEnd?: string } = {
           id: curr.id,
-          timeStart: prevEnd,
         };
-        // Recalculate end time if allow time exists
-        if (curr.allowTime) {
-          const newEnd = calculateEndTime(prevEnd, curr.allowTime);
-          if (newEnd) {
-            update.timeEnd = newEnd;
-          }
+        if (startChanged) {
+          update.timeStart = prevEnd;
+        }
+        if (endChanged) {
+          update.timeEnd = newEnd;
         }
         updates.push(update);
         // Update the local copy so subsequent iterations chain correctly
-        regularRows[i] = { ...regularRows[i], timeStart: prevEnd, ...(update.timeEnd ? { timeEnd: update.timeEnd } : {}) };
+        regularRows[i] = {
+          ...regularRows[i],
+          ...(startChanged ? { timeStart: prevEnd } : {}),
+          ...(endChanged ? { timeEnd: newEnd } : {}),
+        };
       }
     }
 
