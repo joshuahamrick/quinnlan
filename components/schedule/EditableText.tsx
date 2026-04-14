@@ -14,8 +14,11 @@ interface EditableTextProps {
 function renderFormattedText(text: string) {
   const lines = text.split('\n');
   return lines.map((line, lineIdx) => {
-    const isBullet = line.startsWith('• ');
-    const content = isBullet ? line.slice(2) : line;
+    const trimmedLine = line.trimStart();
+    const isBullet = trimmedLine.startsWith('• ') || trimmedLine.startsWith('•');
+    const content = isBullet
+      ? trimmedLine.slice(trimmedLine.startsWith('• ') ? 2 : 1)
+      : line;
 
     // Parse inline formatting: **bold** and *italic*
     const parts: React.ReactNode[] = [];

@@ -150,7 +150,12 @@ export function htmlToMarkdown(html: string): string {
         const el = child as HTMLElement;
         const tag = el.tagName.toLowerCase();
         if (tag === 'div' || tag === 'p') {
-          const inner = Array.from(el.childNodes).map(processNode).join('');
+          let inner = Array.from(el.childNodes).map(processNode).join('');
+          // Normalize bullet prefixes: ensure "• " (with space) consistently
+          const trimmed = inner.trimStart();
+          if (trimmed.startsWith('•') && !trimmed.startsWith('• ')) {
+            inner = '• ' + trimmed.slice(1);
+          }
           lines.push(inner);
         } else {
           // Inline element at top level
