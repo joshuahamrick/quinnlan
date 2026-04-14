@@ -62,21 +62,41 @@ export function FormattingProvider({ children }: { children: React.ReactNode }) 
         node = node.parentNode;
       }
 
+      let cursorNode: Node | null = null;
+      let cursorOffset = 0;
+
       if (node && node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
         const text = el.textContent || '';
         if (text.startsWith('• ')) {
           el.textContent = text.slice(2);
+          cursorNode = el.firstChild;
+          cursorOffset = 0;
         } else {
           el.textContent = '• ' + text;
+          cursorNode = el.firstChild;
+          cursorOffset = 2;
         }
       } else if (node && node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || '';
         if (text.startsWith('• ')) {
           node.textContent = text.slice(2);
+          cursorNode = node;
+          cursorOffset = 0;
         } else {
           node.textContent = '• ' + text;
+          cursorNode = node;
+          cursorOffset = 2;
         }
+      }
+
+      // Place cursor after "• " (or at start if bullet was removed)
+      if (cursorNode && selection) {
+        const newRange = document.createRange();
+        newRange.setStart(cursorNode, cursorOffset);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
       }
 
       // Trigger input event so React picks up the change
