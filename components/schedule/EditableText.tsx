@@ -186,11 +186,26 @@ export default function EditableText({
         const text = (node.textContent || '').replace(/\u200B/g, '');
         if (text.startsWith('• ') || text.startsWith('•')) {
           // Check if cursor is at the very start of the line (before the bullet)
-          const cursorOffset = range.startOffset;
-          const isAtStart = cursorOffset === 0 && range.startContainer === node.firstChild;
-          const isAtDivStart = range.startContainer === node && cursorOffset === 0;
+          let isAtStart = false;
+          if (range.startContainer === node && range.startOffset === 0) {
+            // Cursor is at element level, position 0
+            isAtStart = true;
+          } else if (range.startContainer.nodeType === Node.TEXT_NODE && range.startOffset === 0) {
+            // Cursor is in a text node at offset 0 — only "at start" if no
+            // real text exists in preceding siblings (browser may insert
+            // zero-width spaces or split text nodes during editing)
+            let preceding: Node | null = range.startContainer.previousSibling;
+            isAtStart = true;
+            while (preceding) {
+              if ((preceding.textContent || '').replace(/\u200B/g, '').length > 0) {
+                isAtStart = false;
+                break;
+              }
+              preceding = preceding.previousSibling;
+            }
+          }
 
-          if (isAtStart || isAtDivStart) {
+          if (isAtStart) {
             e.preventDefault();
             // Insert a blank line ABOVE the current bullet
             const newDiv = document.createElement('div');
