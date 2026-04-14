@@ -80,7 +80,8 @@ export default function EditableText({
 
   useEffect(() => {
     if (editing && multiline && editableRef.current) {
-      editableRef.current.innerHTML = markdownToHtml(draft);
+      const cleanDraft = draft.trim();
+      editableRef.current.innerHTML = cleanDraft ? markdownToHtml(cleanDraft) : '';
       editableRef.current.focus();
       // Select all content
       const selection = window.getSelection();
@@ -102,7 +103,9 @@ export default function EditableText({
 
   const save = useCallback(() => {
     if (multiline && editableRef.current) {
-      const md = htmlToMarkdown(editableRef.current.innerHTML);
+      let md = htmlToMarkdown(editableRef.current.innerHTML);
+      // Trim whitespace/newlines; collapse runs of 3+ newlines to 2
+      md = md.trim().replace(/\n{3,}/g, '\n\n');
       setEditing(false);
       if (md !== value) {
         setDraft(md);
@@ -185,7 +188,7 @@ export default function EditableText({
         className={`cursor-pointer hover:bg-blue-50 px-0.5 rounded transition-colors block ${multiline ? 'whitespace-pre-wrap' : ''} ${displayAlign} ${className}`}
         onClick={() => setEditing(true)}
       >
-        {value ? (
+        {value.trim() ? (
           multiline ? renderFormattedText(value) : value
         ) : (
           <span className="text-gray-400 italic" data-export-hide>{placeholder}</span>
