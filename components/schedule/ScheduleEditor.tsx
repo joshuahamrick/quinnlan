@@ -26,8 +26,6 @@ export default function ScheduleEditor() {
   const [previewOrder, setPreviewOrder] = useState<string[] | null>(null);
   const wasDragging = useRef(false);
 
-  const cascadingRef = useRef(false);
-
   // Sync First Shot time → first scene row's start time
   useEffect(() => {
     const firstScene = schedule.rows.find((r): r is SceneRowType => r.type === 'scene');
@@ -44,8 +42,6 @@ export default function ScheduleEditor() {
 
   // Cascade times: each row's start time = previous row's end time
   useEffect(() => {
-    if (cascadingRef.current) return;
-
     const rows = schedule.rows;
     // Only cascade regular rows (not wrap/taillights)
     const regular = rows.filter(
@@ -89,12 +85,9 @@ export default function ScheduleEditor() {
       prevEnd = currentEnd;
     }
 
-    if (updates.length > 0) {
-      cascadingRef.current = true;
-      updates.forEach((u) => updateRow(u.id, u.changes));
-      // Reset cascading flag after a tick
-      setTimeout(() => { cascadingRef.current = false; }, 0);
-    }
+    if (updates.length === 0) return; // All times correct — no infinite loop
+
+    updates.forEach((u) => updateRow(u.id, u.changes));
   }, [schedule.rows, updateRow]);
 
   const handleDragStart = useCallback((e: React.DragEvent, rowId: string, regularRows: { id: string }[]) => {
