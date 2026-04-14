@@ -49,8 +49,7 @@ function renderFormattedText(text: string) {
       return (
         <span key={lineIdx} className="block pl-4">
           {lineIdx > 0 && '\n'}
-          <span className="mr-1">•</span>
-          <span>{parts}</span>
+          {'• '}{parts}
         </span>
       );
     }
@@ -290,7 +289,7 @@ export default function EditableText({
         onBlur={save}
         onKeyDown={handleKeyDown}
         onInput={syncBulletClasses}
-        className={`w-full border border-blue-400 rounded px-1 py-0.5 text-sm outline-none min-h-[3em] whitespace-pre-wrap ${className} ${inputAlign}`}
+        className={`w-full border border-blue-400 rounded px-0.5 py-0.5 outline-none min-h-[3em] whitespace-pre-wrap ${className} ${inputAlign}`}
         style={{ resize: 'vertical', overflow: 'auto' }}
         data-placeholder={placeholder}
       />

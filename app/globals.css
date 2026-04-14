@@ -132,7 +132,6 @@
 /* Style bullet lines live inside contentEditable */
 [contenteditable] .bullet-line {
   padding-left: 1rem;
-  margin-bottom: 0.25rem;
 }
 
 /* Hide interactive UI elements during export capture */
