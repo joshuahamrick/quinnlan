@@ -54,6 +54,25 @@ const PRESET_COLORS = [
 
 type ColorTarget = 'theme';
 
+const RECENT_FONTS_KEY = 'quinnlan-recent-fonts';
+const MAX_RECENT_FONTS = 4;
+
+function loadRecentFonts(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(RECENT_FONTS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentFonts(fonts: string[]) {
+  try {
+    localStorage.setItem(RECENT_FONTS_KEY, JSON.stringify(fonts));
+  } catch {}
+}
+
 export default function FormattingToolbar() {
   const { schedule, updateField, setThemeColor } = useScheduleStore();
   const { applyFormatting, isActive } = useFormatting();
@@ -62,6 +81,18 @@ export default function FormattingToolbar() {
   const [fontSizeOpen, setFontSizeOpen] = useState(false);
   const [activeColorPicker, setActiveColorPicker] = useState<ColorTarget | null>(null);
   const [extractedColors, setExtractedColors] = useState<string[]>([]);
+  const [recentFonts, setRecentFonts] = useState<string[]>([]);
+  const [sizeInput, setSizeInput] = useState(String(schedule.fontSize || 12));
+
+  // Load recent fonts from localStorage on mount
+  useEffect(() => {
+    setRecentFonts(loadRecentFonts());
+  }, []);
+
+  // Keep sizeInput in sync when schedule.fontSize changes externally
+  useEffect(() => {
+    setSizeInput(String(schedule.fontSize || 12));
+  }, [schedule.fontSize]);
 
   const fontRef = useRef<HTMLDivElement>(null);
   const fontSizeRef = useRef<HTMLDivElement>(null);
@@ -114,6 +145,18 @@ export default function FormattingToolbar() {
   const handleFontChange = (font: string) => {
     updateField('fontFamily', font);
     setFontOpen(false);
+    const updated = [font, ...recentFonts.filter((f) => f !== font)].slice(0, MAX_RECENT_FONTS);
+    setRecentFonts(updated);
+    saveRecentFonts(updated);
+  };
+
+  const handleSizeInputApply = () => {
+    const parsed = parseFloat(sizeInput);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 200) {
+      updateField('fontSize', parsed);
+    } else {
+      setSizeInput(String(schedule.fontSize || 12));
+    }
   };
 
   return (
@@ -134,7 +177,29 @@ export default function FormattingToolbar() {
           </svg>
         </button>
         {fontOpen && (
-          <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+          <div
+            className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px] max-h-[320px] overflow-y-auto"
+            style={{ overscrollBehavior: 'contain' }}
+          >
+            {recentFonts.length > 0 && (
+              <>
+                <div className="px-3 py-1 text-[10px] font-medium text-gray-400 uppercase tracking-wide">Recently Used</div>
+                {recentFonts.map((font) => (
+                  <button
+                    key={`recent-${font}`}
+                    onClick={() => handleFontChange(font)}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors ${
+                      schedule.fontFamily === font ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                    }`}
+                    style={{ fontFamily: font }}
+                  >
+                    {font}
+                  </button>
+                ))}
+                <div className="mx-2 my-1 border-t border-gray-200" />
+                <div className="px-3 py-1 text-[10px] font-medium text-gray-400 uppercase tracking-wide">All Fonts</div>
+              </>
+            )}
             {FONT_OPTIONS.map((font) => (
               <button
                 key={font}
@@ -151,23 +216,44 @@ export default function FormattingToolbar() {
         )}
       </div>
 
-      {/* Font size selector */}
+      {/* Font size selector — combo input + dropdown */}
       <div ref={fontSizeRef} className="relative">
-        <button
-          onClick={() => setFontSizeOpen(!fontSizeOpen)}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200 rounded transition-colors min-w-[44px]"
-        >
-          <span>{schedule.fontSize || 12}</span>
-          <svg width="10" height="10" viewBox="0 0 10 10" className="shrink-0 text-gray-400">
-            <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
+        <div className="flex items-center rounded hover:bg-gray-200 transition-colors">
+          <input
+            type="text"
+            value={sizeInput}
+            onChange={(e) => setSizeInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSizeInputApply();
+                setFontSizeOpen(false);
+              }
+            }}
+            onBlur={handleSizeInputApply}
+            className="w-8 px-1.5 py-1 text-xs text-gray-700 bg-transparent outline-none text-center"
+          />
+          <button
+            onClick={() => setFontSizeOpen(!fontSizeOpen)}
+            className="px-0.5 py-1 text-gray-400"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" className="shrink-0">
+              <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
         {fontSizeOpen && (
-          <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[60px]">
+          <div
+            className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[60px] max-h-[200px] overflow-y-auto"
+            style={{ overscrollBehavior: 'contain' }}
+          >
             {FONT_SIZE_OPTIONS.map((size) => (
               <button
                 key={size}
-                onClick={() => { updateField('fontSize', size); setFontSizeOpen(false); }}
+                onClick={() => {
+                  updateField('fontSize', size);
+                  setSizeInput(String(size));
+                  setFontSizeOpen(false);
+                }}
                 className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors ${
                   (schedule.fontSize || 12) === size ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                 }`}
