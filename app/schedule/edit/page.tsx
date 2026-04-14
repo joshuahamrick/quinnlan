@@ -20,13 +20,33 @@ export default function ScheduleEditPage() {
     }
   }
 
+  const handleZoomChange = useCallback((newZoom: number) => {
+    const clamped = Math.min(3, Math.max(0.25, newZoom));
+    const el = scrollAreaRef.current;
+    if (el) {
+      const centerX = el.scrollLeft + el.clientWidth / 2;
+      const centerY = el.scrollTop + el.clientHeight / 2;
+      const oldZoom = zoom;
+
+      setZoom(clamped);
+
+      requestAnimationFrame(() => {
+        const scale = clamped / oldZoom;
+        el.scrollLeft = centerX * scale - el.clientWidth / 2;
+        el.scrollTop = centerY * scale - el.clientHeight / 2;
+      });
+    } else {
+      setZoom(clamped);
+    }
+  }, [zoom]);
+
   const handleWheel = useCallback((e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = -e.deltaY * 0.001;
-      setZoom((prev) => Math.min(3, Math.max(0.25, prev + delta)));
+      handleZoomChange(zoom + delta);
     }
-  }, []);
+  }, [handleZoomChange, zoom]);
 
   useEffect(() => {
     const el = scrollAreaRef.current;
@@ -66,16 +86,24 @@ export default function ScheduleEditPage() {
         </div>
 
         {/* Schedule editor — zoomable scroll area */}
-        <div ref={scrollAreaRef} className="flex-1 overflow-auto bg-gray-100 p-6">
-          <div
-            style={{
+        <div
+          ref={scrollAreaRef}
+          className="flex-1 overflow-auto bg-gray-100"
+          style={{ position: 'relative' }}
+        >
+          <div style={{
+            minWidth: 'min-content',
+            padding: '1.5rem',
+            display: 'flex',
+            justifyContent: 'center',
+          }}>
+            <div style={{
               transform: `scale(${zoom})`,
-              transformOrigin: "top center",
-              width: `${100 / zoom}%`,
-            }}
-          >
-            <div ref={scheduleRef}>
-              <ScheduleEditor />
+              transformOrigin: 'top center',
+            }}>
+              <div ref={scheduleRef}>
+                <ScheduleEditor />
+              </div>
             </div>
           </div>
         </div>
@@ -86,7 +114,7 @@ export default function ScheduleEditPage() {
           data-export-hide
         >
           <button
-            onClick={() => setZoom((z) => Math.max(0.25, Math.round((z - 0.1) * 100) / 100))}
+            onClick={() => handleZoomChange(Math.round((zoom - 0.1) * 100) / 100)}
             className="flex h-6 w-6 items-center justify-center rounded-full text-sm text-gray-600 hover:bg-gray-100 transition-colors"
             aria-label="Zoom out"
           >
@@ -96,7 +124,7 @@ export default function ScheduleEditPage() {
             {Math.round(zoom * 100)}%
           </span>
           <button
-            onClick={() => setZoom((z) => Math.min(3, Math.round((z + 0.1) * 100) / 100))}
+            onClick={() => handleZoomChange(Math.round((zoom + 0.1) * 100) / 100)}
             className="flex h-6 w-6 items-center justify-center rounded-full text-sm text-gray-600 hover:bg-gray-100 transition-colors"
             aria-label="Zoom in"
           >
@@ -104,7 +132,7 @@ export default function ScheduleEditPage() {
           </button>
           {zoom !== 1 && (
             <button
-              onClick={() => setZoom(1)}
+              onClick={() => handleZoomChange(1)}
               className="ml-1 rounded-full px-2 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             >
               Reset
