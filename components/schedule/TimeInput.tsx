@@ -191,8 +191,11 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
     );
   }
 
-  // When not focused and has value, show as plain text
+  // When not focused and has value, show as plain text with clickable A/P toggle
   if (!focused && hasValue) {
+    const displayPeriod = parsed.period; // "A" or "P"
+    const timeWithoutPeriod = displayPeriod ? value.slice(0, -1) : value;
+
     return (
       <span
         tabIndex={0}
@@ -206,7 +209,24 @@ export default function TimeInput({ value, onChange, placeholder, className = ''
           setTimeout(() => hoursRef.current?.focus(), 0);
         }}
       >
-        {value}
+        {timeWithoutPeriod}
+        {displayPeriod && (
+          <span
+            role="button"
+            tabIndex={-1}
+            onClick={(e) => {
+              e.stopPropagation();
+              const next = displayPeriod === 'A' ? 'P' : 'A';
+              setPeriod(next);
+              const newValue = timeWithoutPeriod + next;
+              lastEmittedRef.current = newValue;
+              onChange(newValue);
+            }}
+            className="cursor-pointer hover:text-blue-500 transition-colors rounded"
+          >
+            {displayPeriod}
+          </span>
+        )}
       </span>
     );
   }
