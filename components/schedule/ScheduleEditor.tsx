@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useScheduleStore } from '@/lib/store';
 import { calculateDuration, calculateEndTime } from '@/lib/time-utils';
 import type { SceneRow as SceneRowType, ActionBarRow, ActionBarType, InfoRow as InfoRowType } from '@/lib/types';
@@ -16,6 +17,12 @@ import DayTitleRow from './DayTitleRow';
 import SceneRow from './SceneRow';
 import ActionBar from './ActionBar';
 
+// Usable page heights at 96dpi (page height minus 0.25in top+bottom margins)
+const PAGE_HEIGHTS: Record<string, number> = {
+  letter: 1008,
+  legal: 1296,
+};
+
 function InsertMenu({
   menuId,
   insertMenuId,
@@ -23,6 +30,7 @@ function InsertMenu({
   onScene,
   onAction,
   onInfo,
+  onPageBreak,
 }: {
   menuId: string;
   insertMenuId: string | null;
@@ -30,8 +38,10 @@ function InsertMenu({
   onScene: () => void;
   onAction: () => void;
   onInfo?: () => void;
+  onPageBreak?: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isOpen = insertMenuId === menuId;
   const [showAbove, setShowAbove] = useState(false);
 
@@ -42,8 +52,19 @@ function InsertMenu({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setInsertMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, setInsertMenuId]);
+
   return (
-    <>
+    <div ref={menuRef}>
       <button
         ref={btnRef}
         onClick={() => setInsertMenuId(isOpen ? null : menuId)}
@@ -77,9 +98,20 @@ function InsertMenu({
               Row
             </button>
           )}
+          {onPageBreak && (
+            <>
+              <div className="border-t border-gray-200 my-0.5" />
+              <button
+                onClick={onPageBreak}
+                className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left text-blue-600"
+              >
+                Page Break
+              </button>
+            </>
+          )}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -90,6 +122,7 @@ function InsertMenuLarge({
   onScene,
   onAction,
   onInfo,
+  onPageBreak,
 }: {
   menuId: string;
   insertMenuId: string | null;
@@ -97,8 +130,10 @@ function InsertMenuLarge({
   onScene: () => void;
   onAction: () => void;
   onInfo?: () => void;
+  onPageBreak?: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isOpen = insertMenuId === menuId;
   const [showAbove, setShowAbove] = useState(false);
 
@@ -109,8 +144,19 @@ function InsertMenuLarge({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setInsertMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, setInsertMenuId]);
+
   return (
-    <>
+    <div ref={menuRef}>
       <button
         ref={btnRef}
         onClick={() => setInsertMenuId(isOpen ? null : menuId)}
@@ -144,21 +190,35 @@ function InsertMenuLarge({
               Row
             </button>
           )}
+          {onPageBreak && (
+            <>
+              <div className="border-t border-gray-200 my-0.5" />
+              <button
+                onClick={onPageBreak}
+                className="block w-full px-3 py-1.5 text-xs hover:bg-gray-100 text-left text-blue-600"
+              >
+                Page Break
+              </button>
+            </>
+          )}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
 export default function ScheduleEditor() {
   useWeatherSync();
   useHospitalSync();
-  const { schedule, insertRowAfter, addRow, reorderRows, updateRow, updateField } = useScheduleStore();
+  const { schedule, insertRowAfter, addRow, reorderRows, updateRow, updateField, addPageBreak, removePageBreak, removeRow, addExtraPage, removeExtraPage } = useScheduleStore();
   const [insertMenuId, setInsertMenuId] = useState<string | null>(null);
+  const [deletePageConfirm, setDeletePageConfirm] = useState<number | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [previewOrder, setPreviewOrder] = useState<string[] | null>(null);
   const [dragSection, setDragSection] = useState<'pre' | 'main' | null>(null);
   const wasDragging = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [rowHeights, setRowHeights] = useState<number[]>([]);
 
   // Sync First Shot time → first scene row's start time
   useEffect(() => {
@@ -387,188 +447,361 @@ export default function ScheduleEditor() {
     setInsertMenuId(null);
   };
 
+  const handlePageBreak = (afterRowId: string) => {
+    addPageBreak(afterRowId);
+    setInsertMenuId(null);
+  };
+
+  const handleDeletePage = (pageIdx: number) => {
+    if (pageIdx === 0) return;
+    // Count content pages (pages with actual items) vs extra empty pages
+    const contentPageCount = pages.filter(p => p.length > 0).length;
+    const extraPageStart = contentPageCount;
+    // If deleting an extra empty page, just decrement
+    if (pageIdx >= extraPageStart) {
+      removeExtraPage();
+      return;
+    }
+    const pageIndices = pages[pageIdx];
+    if (!pageIndices) return;
+    // Collect row IDs on this page
+    const rowIdsToDelete = pageIndices
+      .map(i => allItemRowIds[i])
+      .filter((id): id is string => id !== null);
+    // Remove page break that created this page (it's on the last row of the previous page)
+    const prevPageIndices = pages[pageIdx - 1];
+    if (prevPageIndices) {
+      const lastPrevIdx = prevPageIndices[prevPageIndices.length - 1];
+      const lastPrevRowId = allItemRowIds[lastPrevIdx];
+      if (lastPrevRowId && schedule.pageBreaks.includes(lastPrevRowId)) {
+        removePageBreak(lastPrevRowId);
+      }
+    }
+    // Remove all rows on this page
+    rowIdsToDelete.forEach(id => removeRow(id));
+  };
+
+  // Compute row groups
+  const preRows = schedule.rows.filter(r => r.preSchedule);
+  const displayPreRows = dragSection === 'pre' && previewOrder
+    ? previewOrder.map(id => preRows.find(r => r.id === id)!).filter(Boolean)
+    : preRows;
+
+  const regularRows = schedule.rows.filter(
+    (r) =>
+      !r.preSchedule &&
+      (r.type !== 'action' ||
+      ((r as ActionBarRow).actionType !== 'wrap' &&
+        (r as ActionBarRow).actionType !== 'taillights'))
+  );
+  const terminalRows = schedule.rows.filter(
+    (r) =>
+      r.type === 'action' &&
+      ((r as ActionBarRow).actionType === 'wrap' ||
+        (r as ActionBarRow).actionType === 'taillights')
+  );
+  const displayRows = dragSection === 'main' && previewOrder
+    ? previewOrder.map(id => regularRows.find(r => r.id === id)!).filter(Boolean)
+    : regularRows;
+  const firstSceneIndex = displayRows.findIndex(r => r.type === 'scene');
+
+  // Build flat list of renderable items for pagination
+  // Track row IDs in parallel so pagination can detect manual page breaks
+  const allItems: React.ReactNode[] = [];
+  const allItemRowIds: (string | null)[] = [];
+
+  allItems.push(<div key="header"><HeaderBar /></div>);
+  allItemRowIds.push(null);
+  allItems.push(<div key="infogrid"><InfoGrid /></div>);
+  allItemRowIds.push(null);
+  allItems.push(<div key="versionbar"><VersionBar /></div>);
+  allItemRowIds.push(null);
+  allItems.push(<div key="quickref"><QuickRefBar /></div>);
+  allItemRowIds.push(null);
+  allItems.push(<div key="colheaders"><ColumnHeaders /></div>);
+  allItemRowIds.push(null);
+
+  // Pre-schedule rows
+  displayPreRows.forEach((row, index) => {
+    const isDragged = draggedId === row.id;
+    allItems.push(
+      <div key={row.id}>
+        <div
+          draggable
+          onDragStart={(e) => handleDragStart(e, row.id, preRows, 'pre')}
+          onDragOver={(e) => handleDragOver(e, index, 'pre')}
+          onDragEnd={handleDragEnd}
+          onDrop={handleDrop}
+          className={`relative transition-all duration-200 ${
+            isDragged
+              ? 'scale-[1.02] shadow-lg bg-blue-50/50 border border-blue-300 rounded z-10'
+              : draggedId != null && dragSection === 'pre'
+                ? 'opacity-60'
+                : ''
+          }`}
+          data-export-hide={isDragged ? true : undefined}
+        >
+          {row.type === 'scene' ? (
+            <SceneRow row={row as SceneRowType} startTimeReadOnly={false} />
+          ) : row.type === 'info' ? (
+            <InfoRow row={row as InfoRowType} />
+          ) : (
+            <ActionBar row={row as ActionBarRow} />
+          )}
+        </div>
+        <div className="relative h-0 group/insert">
+          <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
+            <InsertMenu
+              menuId={`pre-${row.id}`}
+              insertMenuId={insertMenuId}
+              setInsertMenuId={setInsertMenuId}
+              onScene={() => handleInsertPreRow(row.id, 'scene')}
+              onAction={() => handleInsertPreRow(row.id, 'action')}
+              onInfo={() => handleInsertPreRow(row.id, 'info')}
+            />
+          </div>
+        </div>
+      </div>
+    );
+    allItemRowIds.push(row.id);
+  });
+
+  // Add pre-row button
+  allItems.push(
+    <div key="__pre-end-btn" data-schedule-row data-export-hide>
+      <div
+        className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative"
+        onDragOver={(e) => handleDragOver(e, preRows.length, 'pre')}
+        onDrop={handleDrop}
+      >
+        <InsertMenuLarge
+          menuId="__pre-end"
+          insertMenuId={insertMenuId}
+          setInsertMenuId={setInsertMenuId}
+          onScene={() => handleAddPreRow('scene')}
+          onAction={() => handleAddPreRow('action')}
+          onInfo={() => handleAddPreRow('info')}
+        />
+      </div>
+    </div>
+  );
+  allItemRowIds.push(null);
+
+  // Day title
+  allItems.push(<div key="daytitle"><DayTitleRow /></div>);
+  allItemRowIds.push(null);
+
+  // Regular rows
+  displayRows.forEach((row, index) => {
+    const isDragged = draggedId === row.id;
+    const isFirstScene = row.type === 'scene' && index === firstSceneIndex;
+    allItems.push(
+      <div key={row.id}>
+        <div
+          draggable
+          onDragStart={(e) => handleDragStart(e, row.id, regularRows, 'main')}
+          onDragOver={(e) => handleDragOver(e, index, 'main')}
+          onDragEnd={handleDragEnd}
+          onDrop={handleDrop}
+          className={`relative transition-all duration-200 ${
+            isDragged
+              ? 'scale-[1.02] shadow-lg bg-blue-50/50 border border-blue-300 rounded z-10'
+              : draggedId != null && dragSection === 'main'
+                ? 'opacity-60'
+                : ''
+          }`}
+          data-export-hide={isDragged ? true : undefined}
+        >
+          {row.type === 'scene' ? (
+            <SceneRow row={row as SceneRowType} startTimeReadOnly={isFirstScene} />
+          ) : (
+            <ActionBar row={row as ActionBarRow} />
+          )}
+        </div>
+        <div className="relative h-0 group/insert">
+          <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
+            <InsertMenu
+              menuId={row.id}
+              insertMenuId={insertMenuId}
+              setInsertMenuId={setInsertMenuId}
+              onScene={() => handleInsert(row.id, 'scene')}
+              onAction={() => handleInsert(row.id, 'action')}
+              onPageBreak={() => handlePageBreak(row.id)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+    allItemRowIds.push(row.id);
+  });
+
+  // Add row button
+  allItems.push(
+    <div key="__end-btn" data-schedule-row data-export-hide>
+      <div
+        className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative"
+        onDragOver={(e) => handleDragOver(e, regularRows.length, 'main')}
+        onDrop={handleDrop}
+      >
+        <InsertMenuLarge
+          menuId="__end"
+          insertMenuId={insertMenuId}
+          setInsertMenuId={setInsertMenuId}
+          onScene={() => handleAddToEnd('scene')}
+          onAction={() => handleAddToEnd('action')}
+        />
+      </div>
+    </div>
+  );
+  allItemRowIds.push(null);
+
+  // Terminal rows (wrap + taillights) always at bottom
+  terminalRows.forEach((row) => {
+    allItems.push(
+      <div key={row.id}>
+        <ActionBar row={row as ActionBarRow} />
+      </div>
+    );
+    allItemRowIds.push(row.id);
+  });
+
+  // Measure row heights after render for pagination
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const elements = container.querySelectorAll('[data-schedule-row]');
+    const heights = Array.from(elements).map(el => (el as HTMLElement).offsetHeight);
+    setRowHeights(prev => {
+      if (prev.length === heights.length && prev.every((h, i) => h === heights[i])) return prev;
+      return heights;
+    });
+  });
+
+  // Compute page assignments
+  const pageHeight = PAGE_HEIGHTS[schedule.paperSize] || PAGE_HEIGHTS.letter;
+  const pageBreakSet = new Set(schedule.pageBreaks);
+  const pages: number[][] = [];
+  if (rowHeights.length === allItems.length && allItems.length > 0) {
+    let currentPageHeight = 0;
+    let currentPage: number[] = [];
+    for (let i = 0; i < allItems.length; i++) {
+      if (currentPageHeight + rowHeights[i] > pageHeight && currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [i];
+        currentPageHeight = rowHeights[i];
+      } else {
+        currentPage.push(i);
+        currentPageHeight += rowHeights[i];
+      }
+      // Force page break after this item if its row ID is in pageBreaks
+      const rowId = allItemRowIds[i];
+      if (rowId && pageBreakSet.has(rowId) && currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+        currentPageHeight = 0;
+      }
+    }
+    if (currentPage.length > 0) pages.push(currentPage);
+
+    // Append extra empty pages only after content pages exist
+    const extraPages = schedule.extraPages || 0;
+    for (let i = 0; i < extraPages; i++) {
+      pages.push([]);
+    }
+  }
+
+  const hasPagination = rowHeights.length === allItems.length && allItems.length > 0 && pages.length > 0;
+
+  const paperStyles: React.CSSProperties = {
+    width: '816px',
+    maxWidth: '816px',
+    fontFamily: (schedule.fontFamily || 'Nunito') ? `"${schedule.fontFamily || 'Nunito'}", sans-serif` : undefined,
+    fontSize: (schedule.fontSize || 12) + 'px',
+    borderWidth: (schedule.borderWidth ?? 2) + 'px',
+    borderColor: schedule.borderColor || '#9ca3af',
+    borderStyle: 'solid',
+  };
+
   return (
-    <div
-      className="max-w-[1100px] mx-auto bg-white shadow-sm border-b border-gray-300"
-      id="schedule-content"
-      style={{
-        fontFamily: (schedule.fontFamily || 'Nunito') ? `"${schedule.fontFamily || 'Nunito'}", sans-serif` : undefined,
-        fontSize: (schedule.fontSize || 12) + 'px',
-      }}
-    >
-      <HeaderBar />
-      <InfoGrid />
-      <VersionBar />
-      <QuickRefBar />
-      <ColumnHeaders />
-
-      {/* Pre-schedule rows (including First Shot) */}
-      {(() => {
-        const preRows = schedule.rows.filter(r => r.preSchedule);
-        const displayPreRows = dragSection === 'pre' && previewOrder
-          ? previewOrder.map(id => preRows.find(r => r.id === id)!).filter(Boolean)
-          : preRows;
-
-        return (
-          <>
-            {displayPreRows.map((row, index) => {
-              const isDragged = draggedId === row.id;
-              return (
-                <div key={row.id}>
-                  <div
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, row.id, preRows, 'pre')}
-                    onDragOver={(e) => handleDragOver(e, index, 'pre')}
-                    onDragEnd={handleDragEnd}
-                    onDrop={handleDrop}
-                    className={`relative transition-all duration-200 ${
-                      isDragged
-                        ? 'scale-[1.02] shadow-lg bg-blue-50/50 border border-blue-300 rounded z-10'
-                        : draggedId != null && dragSection === 'pre'
-                          ? 'opacity-60'
-                          : ''
-                    }`}
-                    data-export-hide={isDragged ? true : undefined}
+    <div ref={containerRef} id="schedule-content">
+      {hasPagination ? (
+        pages.map((pageIndices, pageIdx) => (
+          <div key={pageIdx}>
+            {/* Page label + trash icon in one container for symmetric spacing */}
+            <div className="py-8 flex flex-col items-center gap-2" data-export-hide>
+              <div className="flex items-center gap-3">
+                <div className="w-16 border-t border-gray-300" />
+                <span className="text-sm font-semibold text-gray-500 tracking-wide">Page {pageIdx + 1}</span>
+                <div className="w-16 border-t border-gray-300" />
+                {pageIdx > 0 && (
+                  <button
+                    onClick={() => setDeletePageConfirm(pageIdx)}
+                    className="text-gray-400 hover:text-rose-400 hover:bg-rose-50/50 rounded p-1.5 transition-colors"
+                    title="Delete page"
                   >
-                    {row.type === 'scene' ? (
-                      <SceneRow row={row as SceneRowType} startTimeReadOnly={false} />
-                    ) : row.type === 'info' ? (
-                      <InfoRow row={row as InfoRowType} />
-                    ) : (
-                      <ActionBar row={row as ActionBarRow} />
-                    )}
-                  </div>
-
-                  {/* Insert button between pre-rows */}
-                  <div className="relative h-0 group/insert">
-                    <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
-                      <InsertMenu
-                        menuId={`pre-${row.id}`}
-                        insertMenuId={insertMenuId}
-                        setInsertMenuId={setInsertMenuId}
-                        onScene={() => handleInsertPreRow(row.id, 'scene')}
-                        onAction={() => handleInsertPreRow(row.id, 'action')}
-                        onInfo={() => handleInsertPreRow(row.id, 'info')}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Add pre-row button */}
-            <div
-              className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative"
-              data-export-hide
-              onDragOver={(e) => handleDragOver(e, preRows.length, 'pre')}
-              onDrop={handleDrop}
-            >
-              <InsertMenuLarge
-                menuId="__pre-end"
-                insertMenuId={insertMenuId}
-                setInsertMenuId={setInsertMenuId}
-                onScene={() => handleAddPreRow('scene')}
-                onAction={() => handleAddPreRow('action')}
-                onInfo={() => handleAddPreRow('info')}
-              />
-            </div>
-          </>
-        );
-      })()}
-
-      <DayTitleRow />
-
-      {(() => {
-        const regularRows = schedule.rows.filter(
-          (r) =>
-            !r.preSchedule &&
-            (r.type !== 'action' ||
-            ((r as ActionBarRow).actionType !== 'wrap' &&
-              (r as ActionBarRow).actionType !== 'taillights'))
-        );
-        const terminalRows = schedule.rows.filter(
-          (r) =>
-            r.type === 'action' &&
-            ((r as ActionBarRow).actionType === 'wrap' ||
-              (r as ActionBarRow).actionType === 'taillights')
-        );
-
-        const displayRows = dragSection === 'main' && previewOrder
-          ? previewOrder.map(id => regularRows.find(r => r.id === id)!).filter(Boolean)
-          : regularRows;
-
-        const firstSceneIndex = displayRows.findIndex(r => r.type === 'scene');
-
-        return (
-          <>
-            {displayRows.map((row, index) => {
-              const isDragged = draggedId === row.id;
-              const isFirstScene = row.type === 'scene' && index === firstSceneIndex;
-              return (
-                <div key={row.id}>
-                  <div
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, row.id, regularRows, 'main')}
-                    onDragOver={(e) => handleDragOver(e, index, 'main')}
-                    onDragEnd={handleDragEnd}
-                    onDrop={handleDrop}
-                    className={`relative transition-all duration-200 ${
-                      isDragged
-                        ? 'scale-[1.02] shadow-lg bg-blue-50/50 border border-blue-300 rounded z-10'
-                        : draggedId != null && dragSection === 'main'
-                          ? 'opacity-60'
-                          : ''
-                    }`}
-                    data-export-hide={isDragged ? true : undefined}
-                  >
-                    {row.type === 'scene' ? (
-                      <SceneRow row={row as SceneRowType} startTimeReadOnly={isFirstScene} />
-                    ) : (
-                      <ActionBar row={row as ActionBarRow} />
-                    )}
-                  </div>
-
-                  {/* Insert button between rows */}
-                  <div className="relative h-0 group/insert">
-                    <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/insert:opacity-100 transition-opacity">
-                      <InsertMenu
-                        menuId={row.id}
-                        insertMenuId={insertMenuId}
-                        setInsertMenuId={setInsertMenuId}
-                        onScene={() => handleInsert(row.id, 'scene')}
-                        onAction={() => handleInsert(row.id, 'action')}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Add row button - inserts before terminal rows */}
-            <div
-              className="border border-gray-300 border-t-0 px-4 py-2 flex items-center justify-center gap-2 relative"
-              data-export-hide
-              onDragOver={(e) => handleDragOver(e, regularRows.length, 'main')}
-              onDrop={handleDrop}
-            >
-              <InsertMenuLarge
-                menuId="__end"
-                insertMenuId={insertMenuId}
-                setInsertMenuId={setInsertMenuId}
-                onScene={() => handleAddToEnd('scene')}
-                onAction={() => handleAddToEnd('action')}
-              />
-            </div>
-
-            {/* Terminal rows (wrap + taillights) always at bottom */}
-            {terminalRows.map((row) => (
-              <div key={row.id}>
-                <ActionBar row={row as ActionBarRow} />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                )}
               </div>
-            ))}
-          </>
-        );
-      })()}
+            </div>
+            {/* Page content */}
+            <div
+              className="relative mx-auto bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.06)]"
+              style={{ ...paperStyles, minHeight: pageHeight + 'px' }}
+            >
+              {pageIndices.map(i => allItems[i])}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div
+          className="mx-auto bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.06)]"
+          style={paperStyles}
+        >
+          {allItems}
+        </div>
+      )}
+      <div className="flex justify-center mt-6" data-export-hide>
+        <button
+          onClick={addExtraPage}
+          className="flex items-center gap-2 px-5 py-2 bg-white border border-gray-300 rounded-full text-sm text-gray-600 font-medium hover:bg-gray-50 hover:border-gray-400 shadow-sm transition-colors"
+        >
+          <span className="text-blue-500 text-lg leading-none">+</span>
+          Add Page
+        </button>
+      </div>
+      {deletePageConfirm !== null && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm text-center">
+            <div className="w-12 h-12 mx-auto mb-4 bg-rose-50 rounded-full flex items-center justify-center">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete this page?</h3>
+            <p className="text-sm text-gray-500 mb-6">All content on this page will be removed.</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setDeletePageConfirm(null)}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl px-5 py-2 text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { handleDeletePage(deletePageConfirm); setDeletePageConfirm(null); }}
+                className="bg-rose-100 hover:bg-rose-200 text-rose-600 rounded-xl px-5 py-2 text-sm font-medium transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

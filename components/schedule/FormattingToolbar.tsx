@@ -52,6 +52,15 @@ const PRESET_COLORS = [
   '#264653', '#e76f51', '#f4a261', '#2a9d8f',
 ];
 
+const BORDER_WIDTH_OPTIONS = [1, 2, 3, 4];
+
+const BORDER_COLOR_PRESETS = [
+  { label: 'Black', value: '#000000' },
+  { label: 'Dark gray', value: '#374151' },
+  { label: 'Gray', value: '#9ca3af' },
+  { label: 'Light gray', value: '#d1d5db' },
+];
+
 type ColorTarget = 'theme';
 
 const RECENT_FONTS_KEY = 'quinnlan-recent-fonts';
@@ -83,6 +92,8 @@ export default function FormattingToolbar() {
   const [extractedColors, setExtractedColors] = useState<string[]>([]);
   const [recentFonts, setRecentFonts] = useState<string[]>([]);
   const [sizeInput, setSizeInput] = useState(String(schedule.fontSize || 12));
+  const [borderWidthOpen, setBorderWidthOpen] = useState(false);
+  const [borderColorOpen, setBorderColorOpen] = useState(false);
 
   // Load recent fonts from localStorage on mount
   useEffect(() => {
@@ -97,6 +108,8 @@ export default function FormattingToolbar() {
   const fontRef = useRef<HTMLDivElement>(null);
   const fontSizeRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
+  const borderWidthRef = useRef<HTMLDivElement>(null);
+  const borderColorRef = useRef<HTMLDivElement>(null);
 
   // Extract colors from logos
   useEffect(() => {
@@ -132,6 +145,12 @@ export default function FormattingToolbar() {
       }
       if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
         setActiveColorPicker(null);
+      }
+      if (borderWidthRef.current && !borderWidthRef.current.contains(e.target as Node)) {
+        setBorderWidthOpen(false);
+      }
+      if (borderColorRef.current && !borderColorRef.current.contains(e.target as Node)) {
+        setBorderColorOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
@@ -377,6 +396,113 @@ export default function FormattingToolbar() {
                   onChange={(e) => {
                     const v = e.target.value;
                     if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setColorValue('theme', v);
+                  }}
+                  className="h-7 w-20 rounded border border-gray-200 bg-white px-2 text-xs font-mono"
+                  placeholder="#000000"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Separator */}
+      <div className="h-5 w-px bg-gray-300 mx-1" />
+
+      {/* Border controls */}
+      <span className="text-[10px] text-gray-500">Border:</span>
+
+      {/* Border thickness dropdown */}
+      <div ref={borderWidthRef} className="relative">
+        <button
+          onClick={() => setBorderWidthOpen(!borderWidthOpen)}
+          className="flex items-center gap-1 px-1.5 py-1 text-xs text-gray-700 hover:bg-gray-200 rounded transition-colors"
+        >
+          <span>{schedule.borderWidth ?? 2}px</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" className="shrink-0 text-gray-400">
+            <path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {borderWidthOpen && (
+          <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[60px]">
+            {BORDER_WIDTH_OPTIONS.map((w) => (
+              <button
+                key={w}
+                onClick={() => {
+                  updateField('borderWidth', w);
+                  setBorderWidthOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors ${
+                  (schedule.borderWidth ?? 2) === w ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                }`}
+              >
+                {w}px
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Border color picker */}
+      <div ref={borderColorRef} className="relative">
+        <button
+          onClick={() => setBorderColorOpen(!borderColorOpen)}
+          className="flex items-center gap-1 px-1 py-1 hover:bg-gray-200 rounded transition-colors"
+          title="Border Color"
+        >
+          <div
+            className="size-5 rounded-full border border-gray-300"
+            style={{ backgroundColor: schedule.borderColor || '#9ca3af' }}
+          />
+        </button>
+        {borderColorOpen && (
+          <div className="absolute top-full right-0 mt-1 z-50 w-48 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+            <div className="mb-2">
+              <p className="text-[10px] font-medium text-gray-500 mb-1">Presets</p>
+              <div className="flex flex-wrap gap-1">
+                {BORDER_COLOR_PRESETS.map(({ label, value }) => (
+                  <button
+                    key={value}
+                    onClick={() => updateField('borderColor', value)}
+                    className="size-5 rounded-full border-2 transition-shadow"
+                    style={{
+                      backgroundColor: value,
+                      borderColor: (schedule.borderColor || '#9ca3af') === value ? 'black' : 'transparent',
+                      boxShadow: (schedule.borderColor || '#9ca3af') === value ? `0 0 0 2px ${value}` : 'none',
+                    }}
+                    aria-label={`Border color: ${label}`}
+                    title={label}
+                  />
+                ))}
+                {/* Theme color as a preset */}
+                <button
+                  onClick={() => updateField('borderColor', schedule.themeColor)}
+                  className="size-5 rounded-full border-2 transition-shadow"
+                  style={{
+                    backgroundColor: schedule.themeColor,
+                    borderColor: (schedule.borderColor || '#9ca3af') === schedule.themeColor ? 'black' : 'transparent',
+                    boxShadow: (schedule.borderColor || '#9ca3af') === schedule.themeColor ? `0 0 0 2px ${schedule.themeColor}` : 'none',
+                  }}
+                  aria-label="Border color: Theme"
+                  title="Theme color"
+                />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium text-gray-500 mb-1">Custom</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={schedule.borderColor || '#9ca3af'}
+                  onChange={(e) => updateField('borderColor', e.target.value)}
+                  className="h-7 w-10 cursor-pointer rounded border border-gray-200 bg-transparent p-0.5"
+                />
+                <input
+                  type="text"
+                  value={schedule.borderColor || '#9ca3af'}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (/^#[0-9a-fA-F]{0,6}$/.test(v)) updateField('borderColor', v);
                   }}
                   className="h-7 w-20 rounded border border-gray-200 bg-white px-2 text-xs font-mono"
                   placeholder="#000000"

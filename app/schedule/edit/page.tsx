@@ -2,17 +2,52 @@
 
 import { useRef, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useScheduleStore } from "@/lib/store";
 import { FormattingProvider } from "@/lib/formatting-context";
-import ScheduleEditor from "@/components/schedule/ScheduleEditor";
-import ExportButtons from "@/components/schedule/ExportButtons";
-import FormattingToolbar from "@/components/schedule/FormattingToolbar";
+
+const ScheduleEditor = dynamic(() => import("@/components/schedule/ScheduleEditor"), { ssr: false });
+const ExportButtons = dynamic(() => import("@/components/schedule/ExportButtons"), { ssr: false });
+const FormattingToolbar = dynamic(() => import("@/components/schedule/FormattingToolbar"), { ssr: false });
+
+function PaperSizeToggle() {
+  const paperSize = useScheduleStore((s) => s.schedule.paperSize);
+  const updateField = useScheduleStore((s) => s.updateField);
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => updateField('paperSize', 'letter')}
+        className={`px-2 py-1 text-xs rounded-l transition-colors ${
+          paperSize === 'letter'
+            ? 'bg-gray-200 text-gray-800 font-medium'
+            : 'text-gray-500 hover:bg-gray-100'
+        }`}
+      >
+        Letter
+      </button>
+      <button
+        onClick={() => updateField('paperSize', 'legal')}
+        className={`px-2 py-1 text-xs rounded-r transition-colors ${
+          paperSize === 'legal'
+            ? 'bg-gray-200 text-gray-800 font-medium'
+            : 'text-gray-500 hover:bg-gray-100'
+        }`}
+      >
+        Legal
+      </button>
+    </div>
+  );
+}
 
 export default function ScheduleEditPage() {
   const scheduleRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const zoomWrapperRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(1);
+  const displayTimerRef = useRef<NodeJS.Timeout>(undefined);
   const resetSchedule = useScheduleStore((s) => s.resetSchedule);
-  const [zoom, setZoom] = useState(1);
+  const [displayZoom, setDisplayZoom] = useState(1);
 
   function handleNewSchedule() {
     if (window.confirm("Start a new schedule? Any unsaved changes will be lost.")) {
@@ -20,33 +55,34 @@ export default function ScheduleEditPage() {
     }
   }
 
-  const handleZoomChange = useCallback((newZoom: number) => {
+  const applyZoom = useCallback((newZoom: number) => {
     const clamped = Math.min(3, Math.max(0.25, newZoom));
-    const el = scrollAreaRef.current;
-    if (el) {
-      const centerX = el.scrollLeft + el.clientWidth / 2;
-      const centerY = el.scrollTop + el.clientHeight / 2;
-      const oldZoom = zoom;
-
-      setZoom(clamped);
-
-      requestAnimationFrame(() => {
-        const scale = clamped / oldZoom;
-        el.scrollLeft = centerX * scale - el.clientWidth / 2;
-        el.scrollTop = centerY * scale - el.clientHeight / 2;
-      });
-    } else {
-      setZoom(clamped);
+    zoomRef.current = clamped;
+    if (zoomWrapperRef.current) {
+      zoomWrapperRef.current.style.transform = `scale(${clamped})`;
     }
-  }, [zoom]);
+    return clamped;
+  }, []);
+
+  const updateDisplay = useCallback((newZoom: number) => {
+    if (displayTimerRef.current) clearTimeout(displayTimerRef.current);
+    displayTimerRef.current = setTimeout(() => {
+      setDisplayZoom(newZoom);
+    }, 100);
+  }, []);
+
+  const handleZoomChange = useCallback((newZoom: number) => {
+    const clamped = applyZoom(newZoom);
+    updateDisplay(clamped);
+  }, [applyZoom, updateDisplay]);
 
   const handleWheel = useCallback((e: WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = -e.deltaY * 0.005;
-      handleZoomChange(zoom + delta);
+      handleZoomChange(zoomRef.current + delta);
     }
-  }, [handleZoomChange, zoom]);
+  }, [handleZoomChange]);
 
   useEffect(() => {
     const el = scrollAreaRef.current;
@@ -88,7 +124,7 @@ export default function ScheduleEditPage() {
         {/* Schedule editor — zoomable scroll area */}
         <div
           ref={scrollAreaRef}
-          className="flex-1 overflow-auto bg-gray-100"
+          className="flex-1 overflow-auto bg-gray-100 pb-12"
           style={{ position: 'relative' }}
         >
           <div style={{
@@ -97,10 +133,14 @@ export default function ScheduleEditPage() {
             display: 'flex',
             justifyContent: 'center',
           }}>
-            <div style={{
-              transform: `scale(${zoom})`,
-              transformOrigin: 'top center',
-            }}>
+            <div
+              ref={zoomWrapperRef}
+              style={{
+                transform: `scale(${1})`,
+                transformOrigin: 'top center',
+                willChange: 'transform',
+              }}
+            >
               <div ref={scheduleRef}>
                 <ScheduleEditor />
               </div>
@@ -108,36 +148,40 @@ export default function ScheduleEditPage() {
           </div>
         </div>
 
-        {/* Zoom controls — Canva-style bottom-right pill */}
+        {/* Bottom toolbar — paper size + zoom controls */}
         <div
-          className="fixed bottom-4 right-4 z-50 flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 shadow-lg"
+          className="fixed bottom-0 left-0 right-0 z-50 h-10 bg-white border-t border-gray-200 flex items-center px-4"
           data-export-hide
         >
-          <button
-            onClick={() => handleZoomChange(Math.round((zoom - 0.2) * 100) / 100)}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-sm text-gray-600 hover:bg-gray-100 transition-colors"
-            aria-label="Zoom out"
-          >
-            −
-          </button>
-          <span className="w-12 text-center text-xs tabular-nums text-gray-700">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            onClick={() => handleZoomChange(Math.round((zoom + 0.2) * 100) / 100)}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-sm text-gray-600 hover:bg-gray-100 transition-colors"
-            aria-label="Zoom in"
-          >
-            +
-          </button>
-          {zoom !== 1 && (
+          <PaperSizeToggle />
+          <div className="flex-1" />
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => handleZoomChange(1)}
-              className="ml-1 rounded-full px-2 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+              onClick={() => handleZoomChange(Math.round((zoomRef.current - 0.2) * 100) / 100)}
+              className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 text-sm transition-colors"
+              aria-label="Zoom out"
             >
-              Reset
+              −
             </button>
-          )}
+            <span className="text-xs text-gray-600 w-12 text-center tabular-nums">
+              {Math.round(displayZoom * 100)}%
+            </span>
+            <button
+              onClick={() => handleZoomChange(Math.round((zoomRef.current + 0.2) * 100) / 100)}
+              className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 text-sm transition-colors"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+            {displayZoom !== 1 && (
+              <button
+                onClick={() => handleZoomChange(1)}
+                className="text-xs text-gray-400 hover:text-gray-600 ml-1 transition-colors"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </FormattingProvider>

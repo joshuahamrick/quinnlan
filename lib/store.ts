@@ -65,11 +65,14 @@ function createDefaultSchedule(): Schedule {
     hospitalAddress: '',
     hospitalPhone: '',
 
+    paperSize: 'letter',
     logoScale: 1.0,
     infoGridColumns: [15, 25, 18, 16, 26],
     hospitalSplitPercent: 60,
     fontFamily: 'Nunito',
     fontSize: 12,
+    borderWidth: 2,
+    borderColor: '#9ca3af',
 
     quickRefEntries: [
       { id: crypto.randomUUID(), label: 'Production', time: '' },
@@ -77,6 +80,9 @@ function createDefaultSchedule(): Schedule {
       { id: crypto.randomUUID(), label: 'Artist', time: '' },
       { id: crypto.randomUUID(), label: 'Setup', time: '' },
     ],
+
+    pageBreaks: [],
+    extraPages: 0,
 
     rows: [
       {
@@ -168,6 +174,12 @@ interface ScheduleStore {
   addBgCall: () => void;
   removeBgCall: (id: string) => void;
   updateBgCall: (id: string, updates: Partial<Omit<BgCall, 'id'>>) => void;
+
+  // Page breaks
+  addPageBreak: (afterRowId: string) => void;
+  removePageBreak: (afterRowId: string) => void;
+  addExtraPage: () => void;
+  removeExtraPage: () => void;
 
   // Rows
   addRow: (row: ScheduleRow) => void;
@@ -382,6 +394,38 @@ export const useScheduleStore = create<ScheduleStore>()(
           },
         })),
 
+      // Page breaks
+      addPageBreak: (afterRowId) =>
+        set((state) => ({
+          schedule: {
+            ...state.schedule,
+            pageBreaks: state.schedule.pageBreaks.includes(afterRowId)
+              ? state.schedule.pageBreaks
+              : [...state.schedule.pageBreaks, afterRowId],
+          },
+        })),
+      removePageBreak: (afterRowId) =>
+        set((state) => ({
+          schedule: {
+            ...state.schedule,
+            pageBreaks: state.schedule.pageBreaks.filter((id) => id !== afterRowId),
+          },
+        })),
+      addExtraPage: () =>
+        set((state) => ({
+          schedule: {
+            ...state.schedule,
+            extraPages: (state.schedule.extraPages || 0) + 1,
+          },
+        })),
+      removeExtraPage: () =>
+        set((state) => ({
+          schedule: {
+            ...state.schedule,
+            extraPages: Math.max(0, (state.schedule.extraPages || 0) - 1),
+          },
+        })),
+
       // Rows
       addRow: (row) =>
         set((state) => {
@@ -516,7 +560,12 @@ export const useScheduleStore = create<ScheduleStore>()(
           shootingLon: persisted.schedule?.shootingLon ?? currentState.schedule.shootingLon,
           infoGridColumns: persisted.schedule?.infoGridColumns || currentState.schedule.infoGridColumns,
           fontSize: persisted.schedule?.fontSize ?? currentState.schedule.fontSize,
+          borderWidth: persisted.schedule?.borderWidth ?? currentState.schedule.borderWidth,
+          borderColor: persisted.schedule?.borderColor ?? currentState.schedule.borderColor,
+          paperSize: persisted.schedule?.paperSize ?? currentState.schedule.paperSize,
           hospitalSplitPercent: persisted.schedule?.hospitalSplitPercent ?? 60,
+          pageBreaks: persisted.schedule?.pageBreaks ?? [],
+          extraPages: persisted.schedule?.extraPages ?? 0,
         };
 
         // Remove old fields that are no longer on the Schedule type

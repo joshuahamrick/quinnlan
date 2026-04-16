@@ -197,6 +197,12 @@ export default function InfoGrid() {
           style={{ gridRow: '1 / 3' }}
         >
           {(() => {
+            const anyTimeFilled = schedule.callTimes.some(ct => ct.time.trim() !== '');
+            if (!anyTimeFilled) {
+              return (
+                <div className="text-gray-400 italic text-[9px] cursor-pointer" data-export-hide onClick={() => setActiveModal('callTimes')}>Click to add call times</div>
+              );
+            }
             const displayCallTimes = callTimePreviewOrder
               ? callTimePreviewOrder.map(id => schedule.callTimes.find(ct => ct.id === id)!).filter(Boolean)
               : schedule.callTimes;
@@ -270,9 +276,6 @@ export default function InfoGrid() {
               );
             });
           })()}
-          {schedule.callTimes.length === 0 && (
-            <div className="text-gray-400 italic text-[9px] cursor-pointer" data-export-hide onClick={() => setActiveModal('callTimes')}>Click to add call times</div>
-          )}
         </div>
 
         {/* RIGHT COLUMNS (4-5) — nested grid with draggable hospital split */}
@@ -292,28 +295,38 @@ export default function InfoGrid() {
             onClick={() => setActiveModal('talentCalls')}
           >
             <div className="font-extrabold text-[10px] uppercase mb-1">Talent Calls:</div>
-            {schedule.talentCalls.map((tc) => (
-              <div key={tc.id} className="mb-0.5">
-                {tc.label && tc.time ? (
-                  <span>{tc.label}: {tc.time}</span>
-                ) : null}
-              </div>
-            ))}
-            {schedule.bgCalls.length > 0 && (
-              <>
-                <div className="font-extrabold text-[10px] uppercase mt-1.5 mb-0.5">BG Calls:</div>
-                {schedule.bgCalls.map((bc) => (
-                  <div key={bc.id} className="mb-0.5">
-                    {bc.label && bc.time ? (
-                      <span>{bc.label}: {bc.time}</span>
-                    ) : null}
-                  </div>
-                ))}
-              </>
-            )}
-            {schedule.talentCalls.length === 0 && schedule.bgCalls.length === 0 && (
-              <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add</div>
-            )}
+            {(() => {
+              const anyTalentFilled = schedule.talentCalls.some(tc => tc.label.trim() !== '' && tc.time.trim() !== '');
+              const anyBgFilled = schedule.bgCalls.some(bc => bc.label.trim() !== '' && bc.time.trim() !== '');
+              if (!anyTalentFilled && !anyBgFilled) {
+                return (
+                  <div className="text-gray-400 italic text-[9px]" data-export-hide>Click to add talent calls</div>
+                );
+              }
+              return (
+                <>
+                  {schedule.talentCalls.map((tc) => (
+                    <div key={tc.id} className="mb-0.5">
+                      {tc.label && tc.time ? (
+                        <span>{tc.label}: {tc.time}</span>
+                      ) : null}
+                    </div>
+                  ))}
+                  {anyBgFilled && (
+                    <>
+                      <div className="font-extrabold text-[10px] uppercase mt-1.5 mb-0.5">BG Calls:</div>
+                      {schedule.bgCalls.map((bc) => (
+                        <div key={bc.id} className="mb-0.5">
+                          {bc.label && bc.time ? (
+                            <span>{bc.label}: {bc.time}</span>
+                          ) : null}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* DIRECTOR + SHOOTING LOCATION + DAY + DATE/WEATHER — top-right of right section */}
@@ -332,7 +345,7 @@ export default function InfoGrid() {
                 )}
               </div>
               {/* Top-right: Shooting Location */}
-              <div className="text-right">
+              <div className="text-right mb-3">
                 <div className="font-extrabold text-[10px] uppercase mb-0.5">Shooting Location</div>
                 {schedule.shootingLocation ? (
                   <div>{schedule.shootingLocation}</div>
@@ -354,7 +367,7 @@ export default function InfoGrid() {
                   <div className="text-gray-400 italic text-[9px]" data-export-hide>Date</div>
                 )}
                 {schedule.sunrise || schedule.sunset ? (
-                  <div>Sunrise: {schedule.sunrise || '—'} | Sunset: {schedule.sunset || '—'}</div>
+                  <div className="whitespace-nowrap text-[9px]">Sunrise: {schedule.sunrise || '—'} | Sunset: {schedule.sunset || '—'}</div>
                 ) : (
                   <div className="text-gray-400 italic text-[9px]" data-export-hide>Sunrise/Sunset</div>
                 )}

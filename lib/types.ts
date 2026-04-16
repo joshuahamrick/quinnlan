@@ -44,12 +44,25 @@ export interface Schedule {
   // Hospital split (percentage for talent/director vs hospital in right columns)
   hospitalSplitPercent: number;
 
+  // Paper size
+  paperSize: 'letter' | 'legal';
+
   // Font
   fontFamily: string;
   fontSize: number;
 
+  // Border
+  borderWidth: number;
+  borderColor: string;
+
   // Quick reference entries
   quickRefEntries: QuickRefEntry[];
+
+  // Manual page breaks (row IDs after which a page break occurs)
+  pageBreaks: string[];
+
+  // Extra empty pages appended after content
+  extraPages: number;
 
   // Schedule body
   rows: ScheduleRow[];
